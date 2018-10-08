@@ -5,7 +5,7 @@ A virtual reality simulation for equipment maintenance.
 Name | Email | Github Account
 ------------ | ------------- | -------------
 Sharon Lougheed | | SharonLougheed
-Brian Duncan | | Truthseer27
+Brian Duncan | truthseer27@gmail.com | Truthseer27
 David Thigpen | davidthigs@gmail.com | dthigpen
 Minkyu Kim |     | skystar1991
 Xavier Cadot | | 
