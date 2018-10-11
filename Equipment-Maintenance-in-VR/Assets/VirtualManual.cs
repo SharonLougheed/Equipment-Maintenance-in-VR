@@ -12,18 +12,21 @@ namespace Valve.VR.InteractionSystem
 
         public Hand hand;
 
-        public GameObject virtualManualObject;
+        private Canvas manualCanvasObject;
+       
+        public bool activeOnStart = false;
 
         // TODO Add functionality to change page of manual
 
         private void OnEnable()
         {
+            
             if (hand == null)
                 hand = this.GetComponent<Hand>();
 
             if (manualAction== null)
             {
-                Debug.LogError("No plant action assigned");
+                Debug.LogError("No action assigned");
                 return;
             }
 
@@ -41,15 +44,18 @@ namespace Valve.VR.InteractionSystem
             if (manualAction.GetStateDown(hand.handType))
             {
                 Debug.Log("Opening Virtual Manual");
-                // TODO Add function to create instance of virtual manual
+                manualCanvasObject.gameObject.SetActive(!manualCanvasObject.isActiveAndEnabled);
             }
         }
 
 
         // Use this for initialization
         void Start () {
-		
-	    }
+            // TODO use better method of getting the manual canvas
+            manualCanvasObject = GameObject.Find("ManualCanvas").GetComponent<Canvas>();
+            manualCanvasObject.gameObject.SetActive(activeOnStart);
+
+        }
 	
 	    // Update is called once per frame
 	    void Update () {
