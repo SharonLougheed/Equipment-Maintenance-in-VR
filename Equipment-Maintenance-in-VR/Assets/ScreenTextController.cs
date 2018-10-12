@@ -15,8 +15,7 @@ Fuel Filter Pressure High Above Normal";
 
 	// Use this for initialization
 	void Start () {
-       
-        print("hello");
+     
         if(screenCanvas == null || screenText == null)
         {
             Debug.Log("Could not find sceen text in canvas");
@@ -34,7 +33,6 @@ Fuel Filter Pressure High Above Normal";
         while (true)
         {
             screenCanvas.gameObject.SetActive(!screenCanvas.isActiveAndEnabled);
-            print("BLINK");
             yield return new WaitForSeconds(blinkTimerSeconds);
         }
     }
