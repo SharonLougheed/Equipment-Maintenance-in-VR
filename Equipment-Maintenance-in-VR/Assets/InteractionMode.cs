@@ -18,6 +18,7 @@ public class InteractionMode : MonoBehaviour {
     public bool changeMode = false;
     public Material defaultOutlineMaterial;
     public Material acceptablePlacementMaterial;
+    public Material unacceptablePlacementMaterial;
     private Dictionary<string, Material[]> originalMaterials;
     private List<GameObject> allGameObjects;
     private bool isAcceptablePlacement = false;
@@ -30,6 +31,10 @@ public class InteractionMode : MonoBehaviour {
         if (acceptablePlacementMaterial == null)
         {
             acceptablePlacementMaterial = Resources.Load("Materials/OutlineMatGreen") as Material;
+        }
+        if (unacceptablePlacementMaterial == null)
+        {
+            unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
         }
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
@@ -51,6 +56,7 @@ public class InteractionMode : MonoBehaviour {
     
     void OnTriggerEnter(Collider other)
     {
+        print("trigger");
         if(partMode != Mode.OutlinePart)
         {
             return;
@@ -61,22 +67,21 @@ public class InteractionMode : MonoBehaviour {
         {
             isAcceptablePlacement = true;
             print("Entering acceptable placement. " + "Rotation: " + angle);
-
+            ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
         }
         else
         {
             print("Entering UNACCEPTABLE placement. " + "Rotation: " + angle);
+            ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
         }
       
     }
 
     void OnTriggerExit(Collider other)
     {
-        if (isAcceptablePlacement)
-        {
             print("Leaving acceptable placement");
             isAcceptablePlacement = false;
-        }
+            ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
 
     void ApplyModeDefaultsToSelf()
@@ -141,7 +146,7 @@ public class InteractionMode : MonoBehaviour {
                 if (collider != null)
                 {
                     collider.isTrigger = true;
-                    collider.enabled = false;
+                    collider.enabled = true;
                 }
                 if (rigidbody != null)
                 {
@@ -191,6 +196,14 @@ public class InteractionMode : MonoBehaviour {
         return ogMaterials;
     }
 
+    private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
+    {
+        for (int i = 0; i < gameObjects.Count; i++)
+        {
+            Renderer renderer = gameObjects[i].GetComponent<Renderer>();
+            renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
+        }
+    }
     // TODO Recursively store original materials
     //private Dictionary<string, Material[]> SetOriginalMaterials()
     //{
