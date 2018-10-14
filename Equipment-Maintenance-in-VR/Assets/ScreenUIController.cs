@@ -8,7 +8,6 @@ public class ScreenUIController : MonoBehaviour {
     public GameObject trackingObject;
     private Canvas screenCanvas;
     private Text topText;
-    private bool isActive = false;
     public float textDist = .75f;
     public float verticalDist = 3.0f;
     public float horizontalDist = 0.0f;
