@@ -56,7 +56,6 @@ public class InteractionMode : MonoBehaviour {
     
     void OnTriggerEnter(Collider other)
     {
-        print("trigger");
         if(partMode != Mode.OutlinePart)
         {
             return;
@@ -66,12 +65,12 @@ public class InteractionMode : MonoBehaviour {
         if (angle <= acceptableDegrees)
         {
             isAcceptablePlacement = true;
-            print("Entering acceptable placement. " + "Rotation: " + angle);
+            Debug.Log("Entering acceptable placement. " + "Rotation: " + angle);
             ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
         }
         else
         {
-            print("Entering UNACCEPTABLE placement. " + "Rotation: " + angle);
+            Debug.Log("Entering UNACCEPTABLE placement. " + "Rotation: " + angle);
             ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
         }
       
@@ -79,7 +78,7 @@ public class InteractionMode : MonoBehaviour {
 
     void OnTriggerExit(Collider other)
     {
-            print("Leaving acceptable placement");
+            Debug.Log("Leaving acceptable placement");
             isAcceptablePlacement = false;
             ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
@@ -155,13 +154,6 @@ public class InteractionMode : MonoBehaviour {
                 }
                 if (renderer != null)
                 {
-                    //print(gameObject.name + " materials: " + renderer.materials.Length);
-                    //Material[] changedMaterials = new Material[renderer.materials.Length];
-                    //for (int i = 0; i < renderer.materials.Length; i++)
-                    //{
-                    //    changedMaterials[i] = defaultOutlineMaterial;
-                    //}
-                    //renderer.materials = changedMaterials;
                     renderer.materials = GetArrayOfMaterial(defaultOutlineMaterial, renderer.materials.Length);
                 }
 
@@ -204,22 +196,6 @@ public class InteractionMode : MonoBehaviour {
             renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
         }
     }
-    // TODO Recursively store original materials
-    //private Dictionary<string, Material[]> SetOriginalMaterials()
-    //{
-    //    Dictionary<string, Material[]> ogMaterials = new Dictionary<string, Material[]>();
-    //    Renderer renderer = GetComponent<Renderer>();
-    //    if(renderer != null)
-    //        ogMaterials.Add(gameObject.GetInstanceID().ToString(), renderer.materials);
-
-    //    foreach(Renderer childRenderer in GetComponentsInChildren<Renderer>())
-    //    {
-    //        if(childRenderer != null)
-    //            ogMaterials.Add(childRenderer.gameObject.GetInstanceID().ToString(), childRenderer.materials);
-    //    }
-
-    //    return ogMaterials;
-    //}
 
     private Material[] GetOriginalMaterials(Renderer renderer)
     {
@@ -249,7 +225,6 @@ public class InteractionMode : MonoBehaviour {
     {
         List<GameObject> gameObjects = new List<GameObject>();
         FindAllGameObjectsAtOrBelow(gameObject, gameObjects);
-        print("Name: " + start.name + ", size of all objects: " + gameObjects.Count);
         return gameObjects;
     } 
 
