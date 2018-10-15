@@ -5,26 +5,42 @@ using UnityEngine;
 public class InteractionMode : MonoBehaviour {
 
     /*
-     *  Mode states
+     * Need to store self bounds so it doesnt calculate it nearly every frame, easy fix
+     * Need to find way to check if other object is replacement part (tag, is prefab, etc)
+     * Current bug: not all children of OutlinePart are getting isTrigger set to true. Manual fix: set value for all chilren in editor before runtime
+     */
+
+    /*
+     * Part Mode states
      *  Unchanged: no changes will be made to this part
      *  BackgroundPart: a background part is not interactable and not does not have an active collider.
      *  BackgroundPartCollider: a background part is not interactable but does collide with interactable objects.
-     *  InteractablePart: part is interactable.
+     *  InteractablePart: part is interactable with an OutlinePart.
      *  OutlinePart: Part is not collidable and by default has a translucent material to show where/how the part is oriented in an assembly.
      */
     public enum Mode { Unchanged, BackgroundPart, BackgroundPartCollider, OutlinePart, InteractablePart };
     public Mode partMode;
-    public float acceptableDegrees = 10f; // TODO tooltip for what this does
+    [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
+    public bool checkRotation = true;
+    public float acceptableDegrees = 10f;
+    public bool checkPosition = false;
+    public float acceptableMeters = 1.0f;
     public bool changeMode = false;
     public Material defaultOutlineMaterial;
     public Material acceptablePlacementMaterial;
     public Material unacceptablePlacementMaterial;
-    private Dictionary<string, Material[]> originalMaterials;
+    private Dictionary<int, Material[]> originalMaterials;
+    private Dictionary<int, Collider[]> originalColliders; // Only going to be used if outlineIsTrigger is set to true
+    private Dictionary<int, Rigidbody> originalRigidbodies;
     private List<GameObject> allGameObjects;
-    private bool isAcceptablePlacement = false;
-	// Use this for initialization
-	void Start () {
-        if(defaultOutlineMaterial == null)
+    private bool isAcceptableRotation = false;
+    private bool isAcceptablePosition = false;
+    private Bounds selfGroupBounds;
+    private bool boundsExpired = true;
+
+    // Use this for initialization
+    void Start () {
+        if (defaultOutlineMaterial == null)
         {
             defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
         }
@@ -38,9 +54,22 @@ public class InteractionMode : MonoBehaviour {
         }
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
+        originalColliders = SaveOriginalColliders(allGameObjects);
+        originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
 
-        //ApplyModeDefaultsToSelf();
-        //ApplyModeDefaultsToChildren();
+        // Extra init stuff
+        switch (partMode)
+        {
+            case Mode.OutlinePart:
+                // Make sure main gameobject has a rigidbody so that a compound rigidbody can be created (any lower down rigidbodies will be destroyed later when applying defaults)
+                if (gameObject.GetComponent<Rigidbody>() == null)
+                {
+                    gameObject.AddComponent<Rigidbody>().useGravity = false;
+                }
+                // TODO figure out why default material is not being set in ApplyModeDefaults, but this works for now
+                ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
+                break;
+        }
         ApplyModeDefaults(allGameObjects);
     }
 	
@@ -48,38 +77,51 @@ public class InteractionMode : MonoBehaviour {
 	void Update () {
         if (changeMode)
         {
-            ApplyModeDefaultsToSelf();
-            ApplyModeDefaultsToChildren();
+            allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
+            ApplyModeDefaults(allGameObjects);
             changeMode = false;
         }
 	}
-    
+   
     void OnTriggerEnter(Collider other)
     {
-        if(partMode != Mode.OutlinePart)
+        Debug.Log(name + " OnTriggerEnter");
+    }
+
+    void OnTriggerStay(Collider other)
+    {
+        Debug.Log(name + " OnTriggerStay");
+        if (partMode != Mode.OutlinePart)
         {
             return;
         }
 
-        float angle = Quaternion.Angle(transform.rotation, other.transform.rotation);
-        if (angle <= acceptableDegrees)
+        if (!checkRotation || IsWithinRangeOfRotation(transform.rotation, other.transform.rotation, acceptableDegrees))
         {
-            isAcceptablePlacement = true;
-            Debug.Log("Entering acceptable placement. " + "Rotation: " + angle);
+            isAcceptableRotation = true;
+        }
+        if(!checkPosition || IsWithinRangeOfCenter(transform, other.transform, acceptableMeters))
+        {
+            isAcceptablePosition = true;
+        }
+        Debug.Log("IsAcceptableRotation: " + isAcceptableRotation + " IsAcceptablePosition: " + isAcceptablePosition);
+        if((!checkRotation || isAcceptableRotation) && (!checkPosition || isAcceptablePosition))
+        {
             ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
         }
         else
         {
-            Debug.Log("Entering UNACCEPTABLE placement. " + "Rotation: " + angle);
             ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
         }
-      
+        isAcceptableRotation = false;
+        isAcceptablePosition = false;
     }
 
     void OnTriggerExit(Collider other)
     {
-            Debug.Log("Leaving acceptable placement");
-            isAcceptablePlacement = false;
+        isAcceptableRotation = false;
+        isAcceptablePosition = false;
+        if (partMode == Mode.OutlinePart)
             ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
 
@@ -96,50 +138,28 @@ public class InteractionMode : MonoBehaviour {
         {
             ApplyModeDefaults(childTransform.gameObject);
         }
-        
     }
 
     void ApplyModeDefaults(List<GameObject> gameObjects)
     {
+        Debug.Log("Total objects: " + gameObjects.Count);
         for(int i = 0; i < gameObjects.Count; i++)
         {
             ApplyModeDefaults(gameObjects[i]);
         }
     }
-    void ApplyModeDefaults(GameObject gameObject)
+    void ApplyModeDefaults(GameObject obj)
     {
-        Collider collider = gameObject.GetComponent<Collider>();
-        Rigidbody rigidbody = gameObject.GetComponent<Rigidbody>();
-        Renderer renderer = gameObject.GetComponent<Renderer>();
+        Collider collider = obj.GetComponent<Collider>();
+        Rigidbody rigidbody = obj.GetComponent<Rigidbody>();
+        Renderer renderer = obj.GetComponent<Renderer>();
         switch (partMode)
         {
             case Mode.BackgroundPart:
-                if (collider != null)
-                {
-                    collider.isTrigger = false;
-                    collider.enabled = false;
-                }
-                if (rigidbody != null)
-                {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = true;
-                }
-                if(renderer != null)
-                    renderer.materials = GetOriginalMaterials(renderer);
+
                 break;
             case Mode.BackgroundPartCollider:
-                if (collider != null)
-                {
-                    collider.isTrigger = false;
-                    collider.enabled = false;
-                }
-                if (rigidbody != null)
-                {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = false;
-                }
-                if (renderer != null)
-                    renderer.materials = GetOriginalMaterials(renderer);
+
                 break;
             case Mode.OutlinePart:
                 if (collider != null)
@@ -149,26 +169,26 @@ public class InteractionMode : MonoBehaviour {
                 }
                 if (rigidbody != null)
                 {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = true;
+                    if (rigidbody != gameObject.GetComponent<Rigidbody>())
+                    {
+                        Destroy(rigidbody);
+                    }
+                    else
+                    {
+                        rigidbody.useGravity = false;
+                        rigidbody.isKinematic = true;
+                    }
                 }
                 if (renderer != null)
                 {
                     renderer.materials = GetArrayOfMaterial(defaultOutlineMaterial, renderer.materials.Length);
                 }
-
-
                 break;
             case Mode.InteractablePart:
                 if (collider != null)
                 {
                     collider.isTrigger = false;
-                    collider.enabled = false;
-                }
-                if (rigidbody != null)
-                {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = true;
+                    collider.enabled = true;
                 }
                 if (renderer != null)
                     renderer.materials = GetOriginalMaterials(renderer);
@@ -176,16 +196,50 @@ public class InteractionMode : MonoBehaviour {
         }
     }
 
-    private Dictionary<string, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
+    private Dictionary<int, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
     {
-        Dictionary<string, Material[]> ogMaterials = new Dictionary<string, Material[]>();
+        Dictionary<int, Material[]> ogMaterials = new Dictionary<int, Material[]>();
         foreach(GameObject obj in gameObjects)
         {
             Renderer renderer = obj.GetComponent<Renderer>();
             if (renderer != null)
-                ogMaterials.Add(obj.GetInstanceID().ToString(), renderer.materials);
+                ogMaterials.Add(obj.GetInstanceID(), renderer.materials);
         }
         return ogMaterials;
+    }
+
+    private Dictionary<int, Collider[]> SaveOriginalColliders(List<GameObject> gameObjects)
+    {
+        Dictionary<int, Collider[]> ogColliders = new Dictionary<int, Collider[]>();
+        foreach (GameObject obj in gameObjects)
+        {
+            Collider[] colliders = obj.GetComponents<Collider>();
+            ogColliders.Add(obj.GetInstanceID(), colliders);
+        }
+        return ogColliders;
+    }
+
+    private Dictionary<int, Rigidbody> SaveOriginalRigidbodies(List<GameObject> gameObjects)
+    {
+        Dictionary<int, Rigidbody> ogRigidbodies = new Dictionary<int, Rigidbody>();
+        foreach (GameObject obj in gameObjects)
+        {
+            Rigidbody rigidbody = obj.GetComponent<Rigidbody>();
+            ogRigidbodies.Add(obj.GetInstanceID(), rigidbody);
+        }
+        return ogRigidbodies;
+    }
+
+    private void ApplyCollidersToParent()
+    {
+        foreach(Collider[] objColliders in originalColliders.Values)
+        {
+            foreach(Collider collider in objColliders)
+            {
+                // If collider is a primitive collider then add it to the parent
+                // If mesh collider then create closest primitive box collider and add that to parent
+            }
+        }
     }
 
     private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
@@ -193,7 +247,8 @@ public class InteractionMode : MonoBehaviour {
         for (int i = 0; i < gameObjects.Count; i++)
         {
             Renderer renderer = gameObjects[i].GetComponent<Renderer>();
-            renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
+            if(renderer != null)
+                renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
         }
     }
 
@@ -201,7 +256,7 @@ public class InteractionMode : MonoBehaviour {
     {
         if(renderer != null)
         {
-            string InstanceId = renderer.gameObject.GetInstanceID().ToString();
+            int InstanceId = renderer.gameObject.GetInstanceID();
             if (originalMaterials.ContainsKey(InstanceId))
             {
                 return originalMaterials[InstanceId];
@@ -240,9 +295,42 @@ public class InteractionMode : MonoBehaviour {
         }
     }
 
-    // TODO if object only has mesh collider create and add a primitive on using its bounds
-    private Collider ApproximatePrimitiveCollider()
+    private bool IsWithinRangeOfRotation(Quaternion rot1, Quaternion rot2, float limit)
     {
-        return null;
+        Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
+        return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
+    }
+
+    private bool IsWithinRangeOfCenter(Transform trans1, Transform trans2, float limit)
+    {
+        Bounds bounds1 = CalculateGroupedBounds(trans1);
+        Bounds bounds2 = CalculateGroupedBounds(trans2);
+        Debug.Log("Distance between objects: " + Vector3.Distance(bounds1.center, bounds2.center));
+        return Vector3.Distance(bounds1.center, bounds2.center) <= limit ? true : false;
+    }
+
+    private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
+    {
+        if (boundsExpired)
+        {
+            selfGroupBounds = CalculateGroupedBounds(transform);
+            boundsExpired = false;
+        }
+        Bounds otherBounds = CalculateGroupedBounds(otherTransform);
+        Debug.Log("Distance between objects: " + Vector3.Distance(selfGroupBounds.center, otherBounds.center));
+        return Vector3.Distance(selfGroupBounds.center, otherBounds.center) <= limit ? true : false;
+    }
+
+
+    private Bounds CalculateGroupedBounds(Transform trans)
+    {
+        Renderer[] renderers = trans.GetComponentsInChildren<Renderer>();
+        Bounds bounds = renderers[0].bounds; // Might need to check that renderer is null first
+        foreach(Renderer renderer in renderers)
+        {
+            if(renderer != null)
+                bounds.Encapsulate(renderer.bounds);
+        }
+        return bounds;
     }
 }
