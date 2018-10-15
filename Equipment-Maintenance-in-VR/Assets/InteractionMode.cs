@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class InteractionMode : MonoBehaviour {
 
+    // NOTE Only partMode=OutlinePart and outlineIsTrigger=false is stable. The interactive object (eg. new part held by user) must be set to be a trigger right now
     /*
-     *  Mode states
+     * Part Mode states
      *  Unchanged: no changes will be made to this part
      *  BackgroundPart: a background part is not interactable and not does not have an active collider.
      *  BackgroundPartCollider: a background part is not interactable but does collide with interactable objects.
@@ -14,17 +15,28 @@ public class InteractionMode : MonoBehaviour {
      */
     public enum Mode { Unchanged, BackgroundPart, BackgroundPartCollider, OutlinePart, InteractablePart };
     public Mode partMode;
-    public float acceptableDegrees = 10f; // TODO tooltip for what this does
+    [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
+    public bool checkRotation = true; // TODO only check if true
+    public float acceptableDegrees = 10f;
+    public bool checkPosition = true; // TODO only check if true
+    public float acceptableMeters = 0.1f;
     public bool changeMode = false;
+    [Tooltip("Trigger will be used instread of collision")]
+    public bool outlineIsTrigger = false; // When using collision mode the interactive object must be a trigger
     public Material defaultOutlineMaterial;
     public Material acceptablePlacementMaterial;
     public Material unacceptablePlacementMaterial;
-    private Dictionary<string, Material[]> originalMaterials;
+    private Dictionary<int, Material[]> originalMaterials;
+    private Dictionary<int, Collider[]> originalColliders; // Only going to be used if outlineIsTrigger is set to true
+    private Dictionary<int, Rigidbody> originalRigidbodies;
     private List<GameObject> allGameObjects;
     private bool isAcceptablePlacement = false;
+    private int parentInstanceId;
+    
 	// Use this for initialization
 	void Start () {
-        if(defaultOutlineMaterial == null)
+        parentInstanceId = GetInstanceID();
+        if (defaultOutlineMaterial == null)
         {
             defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
         }
@@ -38,9 +50,8 @@ public class InteractionMode : MonoBehaviour {
         }
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
-
-        //ApplyModeDefaultsToSelf();
-        //ApplyModeDefaultsToChildren();
+        originalColliders = SaveOriginalColliders(allGameObjects);
+        originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
         ApplyModeDefaults(allGameObjects);
     }
 	
@@ -48,12 +59,38 @@ public class InteractionMode : MonoBehaviour {
 	void Update () {
         if (changeMode)
         {
-            ApplyModeDefaultsToSelf();
-            ApplyModeDefaultsToChildren();
+            allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
+            ApplyModeDefaults(allGameObjects);
             changeMode = false;
         }
 	}
-    
+    void OnCollisionEnter(Collision collision)
+    {
+        Collider other = collision.collider;
+        if (partMode != Mode.OutlinePart)
+        {
+            return;
+        }
+
+        if (isWithinRotationLimit(transform.rotation, other.transform.rotation, acceptableDegrees)
+            && isWithinPositionLimit(transform, other.transform, acceptableMeters))
+        {
+            isAcceptablePlacement = true;
+            ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
+        }
+        else
+        {
+            ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        Collider other = collision.collider;
+        isAcceptablePlacement = false;
+        ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if(partMode != Mode.OutlinePart)
@@ -61,24 +98,20 @@ public class InteractionMode : MonoBehaviour {
             return;
         }
 
-        float angle = Quaternion.Angle(transform.rotation, other.transform.rotation);
-        if (angle <= acceptableDegrees)
+        if (isWithinRotationLimit(transform.rotation, other.transform.rotation, acceptableDegrees)
+            && isWithinPositionLimit(transform, other.transform, acceptableMeters))
         {
             isAcceptablePlacement = true;
-            Debug.Log("Entering acceptable placement. " + "Rotation: " + angle);
             ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
         }
         else
         {
-            Debug.Log("Entering UNACCEPTABLE placement. " + "Rotation: " + angle);
             ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
-        }
-      
+        } 
     }
 
     void OnTriggerExit(Collider other)
     {
-            Debug.Log("Leaving acceptable placement");
             isAcceptablePlacement = false;
             ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
@@ -105,12 +138,14 @@ public class InteractionMode : MonoBehaviour {
         {
             ApplyModeDefaults(gameObjects[i]);
         }
+
+
     }
-    void ApplyModeDefaults(GameObject gameObject)
+    void ApplyModeDefaults(GameObject obj)
     {
-        Collider collider = gameObject.GetComponent<Collider>();
-        Rigidbody rigidbody = gameObject.GetComponent<Rigidbody>();
-        Renderer renderer = gameObject.GetComponent<Renderer>();
+        Collider collider = obj.GetComponent<Collider>();
+        Rigidbody rigidbody = obj.GetComponent<Rigidbody>();
+        Renderer renderer = obj.GetComponent<Renderer>();
         switch (partMode)
         {
             case Mode.BackgroundPart:
@@ -144,13 +179,13 @@ public class InteractionMode : MonoBehaviour {
             case Mode.OutlinePart:
                 if (collider != null)
                 {
-                    collider.isTrigger = true;
+                    collider.isTrigger = outlineIsTrigger;
                     collider.enabled = true;
                 }
                 if (rigidbody != null)
                 {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = true;
+                    if (rigidbody != gameObject.GetComponent<Rigidbody>())
+                        Destroy(rigidbody);
                 }
                 if (renderer != null)
                 {
@@ -176,16 +211,50 @@ public class InteractionMode : MonoBehaviour {
         }
     }
 
-    private Dictionary<string, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
+    private Dictionary<int, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
     {
-        Dictionary<string, Material[]> ogMaterials = new Dictionary<string, Material[]>();
+        Dictionary<int, Material[]> ogMaterials = new Dictionary<int, Material[]>();
         foreach(GameObject obj in gameObjects)
         {
             Renderer renderer = obj.GetComponent<Renderer>();
             if (renderer != null)
-                ogMaterials.Add(obj.GetInstanceID().ToString(), renderer.materials);
+                ogMaterials.Add(obj.GetInstanceID(), renderer.materials);
         }
         return ogMaterials;
+    }
+
+    private Dictionary<int, Collider[]> SaveOriginalColliders(List<GameObject> gameObjects)
+    {
+        Dictionary<int, Collider[]> ogColliders = new Dictionary<int, Collider[]>();
+        foreach (GameObject obj in gameObjects)
+        {
+            Collider[] colliders = obj.GetComponents<Collider>();
+            ogColliders.Add(obj.GetInstanceID(), colliders);
+        }
+        return ogColliders;
+    }
+
+    private Dictionary<int, Rigidbody> SaveOriginalRigidbodies(List<GameObject> gameObjects)
+    {
+        Dictionary<int, Rigidbody> ogRigidbodies = new Dictionary<int, Rigidbody>();
+        foreach (GameObject obj in gameObjects)
+        {
+            Rigidbody rigidbody = obj.GetComponent<Rigidbody>();
+            ogRigidbodies.Add(obj.GetInstanceID(), rigidbody);
+        }
+        return ogRigidbodies;
+    }
+
+    private void ApplyCollidersToParent()
+    {
+        foreach(Collider[] objColliders in originalColliders.Values)
+        {
+            foreach(Collider collider in objColliders)
+            {
+                // If collider is a primitive collider then add it to the parent
+                // If mesh collider then create closest primitive box collider and add that to parent
+            }
+        }
     }
 
     private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
@@ -193,7 +262,8 @@ public class InteractionMode : MonoBehaviour {
         for (int i = 0; i < gameObjects.Count; i++)
         {
             Renderer renderer = gameObjects[i].GetComponent<Renderer>();
-            renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
+            if(renderer != null)
+                renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
         }
     }
 
@@ -201,7 +271,7 @@ public class InteractionMode : MonoBehaviour {
     {
         if(renderer != null)
         {
-            string InstanceId = renderer.gameObject.GetInstanceID().ToString();
+            int InstanceId = renderer.gameObject.GetInstanceID();
             if (originalMaterials.ContainsKey(InstanceId))
             {
                 return originalMaterials[InstanceId];
@@ -238,6 +308,18 @@ public class InteractionMode : MonoBehaviour {
             if(childTransform.parent == start.transform)
                 FindAllGameObjectsAtOrBelow(childTransform.gameObject, objects);
         }
+    }
+
+    private bool isWithinRotationLimit(Quaternion rot1, Quaternion rot2, float limit)
+    {
+        Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
+        return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
+    }
+
+    private bool isWithinPositionLimit(Transform trans1, Transform trans2, float limit)
+    {
+        Debug.Log("Distance between objects: " + Vector3.Distance(trans1.position, trans2.position));
+        return Vector3.Distance(trans1.position, trans2.position) <= limit ? true : false;
     }
 
     // TODO if object only has mesh collider create and add a primitive on using its bounds
