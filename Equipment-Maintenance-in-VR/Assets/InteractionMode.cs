@@ -4,8 +4,7 @@ using UnityEngine;
 
 public class InteractionMode : MonoBehaviour {
 
-    /* Not stable
-     * Only method of triggering is having OutlinePart set to isTrigger
+    /*
      * Need to store self bounds so it doesnt calculate it nearly every frame, easy fix
      * Need to find way to check if other object is replacement part (tag, is prefab, etc)
      * Current bug: not all children of OutlinePart are getting isTrigger set to true. Manual fix: set value for all chilren in editor before runtime
@@ -34,9 +33,10 @@ public class InteractionMode : MonoBehaviour {
     private Dictionary<int, Collider[]> originalColliders; // Only going to be used if outlineIsTrigger is set to true
     private Dictionary<int, Rigidbody> originalRigidbodies;
     private List<GameObject> allGameObjects;
-    // private bool isAcceptablePlacement = false;
     private bool isAcceptableRotation = false;
     private bool isAcceptablePosition = false;
+    private Bounds selfGroupBounds;
+    private bool boundsExpired = true;
 
     // Use this for initialization
     void Start () {
@@ -307,6 +307,18 @@ public class InteractionMode : MonoBehaviour {
         Bounds bounds2 = CalculateGroupedBounds(trans2);
         Debug.Log("Distance between objects: " + Vector3.Distance(bounds1.center, bounds2.center));
         return Vector3.Distance(bounds1.center, bounds2.center) <= limit ? true : false;
+    }
+
+    private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
+    {
+        if (boundsExpired)
+        {
+            selfGroupBounds = CalculateGroupedBounds(transform);
+            boundsExpired = false;
+        }
+        Bounds otherBounds = CalculateGroupedBounds(otherTransform);
+        Debug.Log("Distance between objects: " + Vector3.Distance(selfGroupBounds.center, otherBounds.center));
+        return Vector3.Distance(selfGroupBounds.center, otherBounds.center) <= limit ? true : false;
     }
 
 
