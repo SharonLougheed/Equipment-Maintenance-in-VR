@@ -30,7 +30,7 @@ public class InteractionMode : MonoBehaviour {
     public Material acceptablePlacementMaterial;
     public Material unacceptablePlacementMaterial;
     private Dictionary<int, Material[]> originalMaterials;
-    private Dictionary<int, Collider[]> originalColliders; // Only going to be used if outlineIsTrigger is set to true
+    private Dictionary<string, Collider[]> originalColliders; // Only going to be used if outlineIsTrigger is set to true
     private Dictionary<int, Rigidbody> originalRigidbodies;
     private List<GameObject> allGameObjects;
     private bool isAcceptableRotation = false;
@@ -56,7 +56,7 @@ public class InteractionMode : MonoBehaviour {
         }
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
-        //originalColliders = SaveOriginalColliders(allGameObjects);
+        originalColliders = SaveOriginalColliders(allGameObjects);
         //originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
 
         // Extra init stuff
@@ -88,6 +88,10 @@ public class InteractionMode : MonoBehaviour {
     void OnTriggerEnter(Collider other)
     {
         Debug.Log(name + " OnTriggerEnter");
+        Debug.Log("Other Collider: " + other.name);
+        Debug.Log("Matching Collider: " + originalColliders[other.name][0]);
+
+
     }
 
     void OnTriggerStay(Collider other)
@@ -211,13 +215,13 @@ public class InteractionMode : MonoBehaviour {
         return ogMaterials;
     }
 
-    private Dictionary<int, Collider[]> SaveOriginalColliders(List<GameObject> gameObjects)
+    private Dictionary<string, Collider[]> SaveOriginalColliders(List<GameObject> gameObjects)
     {
-        Dictionary<int, Collider[]> ogColliders = new Dictionary<int, Collider[]>();
+        Dictionary<string, Collider[]> ogColliders = new Dictionary<string, Collider[]>();
         foreach (GameObject obj in gameObjects)
         {
             Collider[] colliders = obj.GetComponents<Collider>();
-            ogColliders.Add(obj.GetInstanceID(), colliders);
+            ogColliders.Add(obj.name, colliders);
         }
         return ogColliders;
     }
@@ -284,7 +288,7 @@ public class InteractionMode : MonoBehaviour {
         List<GameObject> gameObjects = new List<GameObject>();
         FindAllGameObjectsAtOrBelow(gameObject, gameObjects);
         return gameObjects;
-    } 
+    }
 
     private void FindAllGameObjectsAtOrBelow(GameObject start, List<GameObject> objects)
     {
@@ -300,7 +304,7 @@ public class InteractionMode : MonoBehaviour {
 
     private bool IsWithinRangeOfRotation(Quaternion rot1, Quaternion rot2, float limit)
     {
-        Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
+        // Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
         return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
     }
 
@@ -316,7 +320,7 @@ public class InteractionMode : MonoBehaviour {
             otherGroupBounds = CalculateGroupedBounds(otherTransform);
             otherBoundsExpired = false;
         }
-        Debug.Log("Distance between objects: " + Vector3.Distance(selfGroupBounds.center, otherGroupBounds.center));
+        // Debug.Log("Distance between objects: " + Vector3.Distance(selfGroupBounds.center, otherGroupBounds.center));
         return Vector3.Distance(selfGroupBounds.center, otherGroupBounds.center) <= limit ? true : false;
     }
 
