@@ -4,25 +4,29 @@ using UnityEngine;
 
 public class InteractionMode : MonoBehaviour {
 
-    // NOTE Only partMode=OutlinePart and outlineIsTrigger=false is stable. The interactive object (eg. new part held by user) must be set to be a trigger right now
+    /* Not stable
+     * Only method of triggering is having OutlinePart set to isTrigger
+     * Need to find out how to check if their positions are overlapping
+     */
+
     /*
      * Part Mode states
      *  Unchanged: no changes will be made to this part
      *  BackgroundPart: a background part is not interactable and not does not have an active collider.
      *  BackgroundPartCollider: a background part is not interactable but does collide with interactable objects.
-     *  InteractablePart: part is interactable.
+     *  InteractablePart: part is interactable with an OutlinePart.
      *  OutlinePart: Part is not collidable and by default has a translucent material to show where/how the part is oriented in an assembly.
      */
     public enum Mode { Unchanged, BackgroundPart, BackgroundPartCollider, OutlinePart, InteractablePart };
     public Mode partMode;
     [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
-    public bool checkRotation = true; // TODO only check if true
+    public bool checkRotation = true;
     public float acceptableDegrees = 10f;
-    public bool checkPosition = true; // TODO only check if true
-    public float acceptableMeters = 0.1f;
+    public bool checkPosition = false;
+    public float acceptableMeters = 1.0f;
     public bool changeMode = false;
     [Tooltip("Trigger will be used instread of collision")]
-    public bool outlineIsTrigger = false; // When using collision mode the interactive object must be a trigger
+    public bool outlineIsTrigger = true; // When using collision mode the interactive object must be a trigger
     public Material defaultOutlineMaterial;
     public Material acceptablePlacementMaterial;
     public Material unacceptablePlacementMaterial;
@@ -52,6 +56,22 @@ public class InteractionMode : MonoBehaviour {
         originalMaterials = SaveOriginalMaterials(allGameObjects);
         originalColliders = SaveOriginalColliders(allGameObjects);
         originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
+
+        // Extra init stuff
+        switch (partMode)
+        {
+            case Mode.OutlinePart:
+                // Make sure main gameobject has a rigidbody so that a compound rigidbody can be created (any lower down rigidbodies will be destroyed later when applying defaults)
+                if (gameObject.GetComponent<Rigidbody>() == null)
+                {
+                    gameObject.AddComponent<Rigidbody>().useGravity = false;
+                }
+                // TODO figure out why default material is not being set in ApplyModeDefaults, but this works for now
+                ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
+
+                break;
+        }
+
         ApplyModeDefaults(allGameObjects);
     }
 	
@@ -64,42 +84,45 @@ public class InteractionMode : MonoBehaviour {
             changeMode = false;
         }
 	}
-    void OnCollisionEnter(Collision collision)
-    {
-        Collider other = collision.collider;
-        if (partMode != Mode.OutlinePart)
-        {
-            return;
-        }
+    //void OnCollisionEnter(Collision collision)
+    //{
+    //    Debug.Log("OnCollisionEnter");
+    //    if (partMode != Mode.OutlinePart)
+    //    {
+    //        return;
+    //    }
+    //    Collider other = collision.collider;
+        
+    //    if (IsWithinRotationLimit(transform.rotation, other.transform.rotation, acceptableDegrees)
+    //        && IsWithinCenterDistanceLimit(gameObject, other.GetComponent<GameObject>(), acceptableMeters))
+    //    {
+    //        isAcceptablePlacement = true;
+    //        ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
+    //    }
+    //    else
+    //    {
+    //        ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
+    //    }
+    //}
 
-        if (isWithinRotationLimit(transform.rotation, other.transform.rotation, acceptableDegrees)
-            && isWithinPositionLimit(transform, other.transform, acceptableMeters))
-        {
-            isAcceptablePlacement = true;
-            ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
-        }
-        else
-        {
-            ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
-        }
-    }
-
-    void OnCollisionExit(Collision collision)
-    {
-        Collider other = collision.collider;
-        isAcceptablePlacement = false;
-        ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
-    }
+    //void OnCollisionExit(Collision collision)
+    //{
+    //    Collider other = collision.collider;
+    //    isAcceptablePlacement = false;
+    //    if(partMode == Mode.OutlinePart)
+    //        ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
+    //}
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log(name + " OnTriggerEnter");
         if(partMode != Mode.OutlinePart)
         {
             return;
         }
 
-        if (isWithinRotationLimit(transform.rotation, other.transform.rotation, acceptableDegrees)
-            && isWithinPositionLimit(transform, other.transform, acceptableMeters))
+        if((!checkRotation || IsWithinRotationLimit(transform.rotation, other.transform.rotation, acceptableDegrees))
+            && (!checkPosition || IsWithinPositionLimit(transform, other.transform, acceptableMeters)))
         {
             isAcceptablePlacement = true;
             ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
@@ -112,7 +135,8 @@ public class InteractionMode : MonoBehaviour {
 
     void OnTriggerExit(Collider other)
     {
-            isAcceptablePlacement = false;
+        isAcceptablePlacement = false;
+        if (partMode == Mode.OutlinePart)
             ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
 
@@ -187,6 +211,11 @@ public class InteractionMode : MonoBehaviour {
                     if (rigidbody != gameObject.GetComponent<Rigidbody>())
                         Destroy(rigidbody);
                 }
+                else
+                {
+                    rigidbody.useGravity = false;
+                    rigidbody.isKinematic = true;
+                }
                 if (renderer != null)
                 {
                     renderer.materials = GetArrayOfMaterial(defaultOutlineMaterial, renderer.materials.Length);
@@ -197,13 +226,15 @@ public class InteractionMode : MonoBehaviour {
             case Mode.InteractablePart:
                 if (collider != null)
                 {
-                    collider.isTrigger = false;
-                    collider.enabled = false;
+                    collider.isTrigger = true;
+                    collider.enabled = true;
                 }
                 if (rigidbody != null)
                 {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = true;
+                    if (rigidbody != gameObject.GetComponent<Rigidbody>())
+                    {
+                        Destroy(rigidbody);
+                    }
                 }
                 if (renderer != null)
                     renderer.materials = GetOriginalMaterials(renderer);
@@ -310,16 +341,38 @@ public class InteractionMode : MonoBehaviour {
         }
     }
 
-    private bool isWithinRotationLimit(Quaternion rot1, Quaternion rot2, float limit)
+    private bool IsWithinRotationLimit(Quaternion rot1, Quaternion rot2, float limit)
     {
         Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
         return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
     }
 
-    private bool isWithinPositionLimit(Transform trans1, Transform trans2, float limit)
+    private bool IsWithinPositionLimit(Transform trans1, Transform trans2, float limit)
     {
         Debug.Log("Distance between objects: " + Vector3.Distance(trans1.position, trans2.position));
         return Vector3.Distance(trans1.position, trans2.position) <= limit ? true : false;
+    }
+
+    private bool IsWithinCenterDistanceLimit(GameObject obj1, GameObject obj2, float limit)
+    {
+        if(obj1 == null || obj2 == null)
+        {
+            Debug.Log("One or more GameObjects is null");
+            return false;
+        }
+        Renderer renderer1 = obj1.GetComponent<Renderer>();
+        Renderer renderer2 = obj2.GetComponent<Renderer>();
+        if(renderer1 != null && renderer2 != null)
+        {
+            Debug.Log("Distance between object centers: " + Vector3.Distance(renderer1.bounds.center, renderer2.bounds.center));
+            return Vector3.Distance(renderer1.bounds.center, renderer2.bounds.center) <= limit ? true : false;
+        }
+        else
+        {
+            Debug.Log("No Renderer found on one or more GameObjects");
+            return false;
+        }
+
     }
 
     // TODO if object only has mesh collider create and add a primitive on using its bounds
