@@ -170,12 +170,14 @@ public class InteractionMode : MonoBehaviour {
                 if (rigidbody != null)
                 {
                     if (rigidbody != gameObject.GetComponent<Rigidbody>())
+                    {
                         Destroy(rigidbody);
-                }
-                else
-                {
-                    rigidbody.useGravity = false;
-                    rigidbody.isKinematic = true;
+                    }
+                    else
+                    {
+                        rigidbody.useGravity = false;
+                        rigidbody.isKinematic = true;
+                    }
                 }
                 if (renderer != null)
                 {
