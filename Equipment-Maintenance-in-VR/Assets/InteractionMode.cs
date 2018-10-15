@@ -36,7 +36,9 @@ public class InteractionMode : MonoBehaviour {
     private bool isAcceptableRotation = false;
     private bool isAcceptablePosition = false;
     private Bounds selfGroupBounds;
-    private bool boundsExpired = true;
+    private Bounds otherGroupBounds;
+    private bool selfBoundsExpired = true;
+    private bool otherBoundsExpired = true;
 
     // Use this for initialization
     void Start () {
@@ -54,8 +56,8 @@ public class InteractionMode : MonoBehaviour {
         }
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
-        originalColliders = SaveOriginalColliders(allGameObjects);
-        originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
+        //originalColliders = SaveOriginalColliders(allGameObjects);
+        //originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
 
         // Extra init stuff
         switch (partMode)
@@ -100,7 +102,7 @@ public class InteractionMode : MonoBehaviour {
         {
             isAcceptableRotation = true;
         }
-        if(!checkPosition || IsWithinRangeOfCenter(transform, other.transform, acceptableMeters))
+        if((!checkRotation || isAcceptableRotation) && (!checkPosition || IsWithinRangeOfCenter(other.transform, acceptableMeters)))
         {
             isAcceptablePosition = true;
         }
@@ -121,6 +123,7 @@ public class InteractionMode : MonoBehaviour {
     {
         isAcceptableRotation = false;
         isAcceptablePosition = false;
+        otherBoundsExpired = true;
         if (partMode == Mode.OutlinePart)
             ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
@@ -301,24 +304,20 @@ public class InteractionMode : MonoBehaviour {
         return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
     }
 
-    private bool IsWithinRangeOfCenter(Transform trans1, Transform trans2, float limit)
-    {
-        Bounds bounds1 = CalculateGroupedBounds(trans1);
-        Bounds bounds2 = CalculateGroupedBounds(trans2);
-        Debug.Log("Distance between objects: " + Vector3.Distance(bounds1.center, bounds2.center));
-        return Vector3.Distance(bounds1.center, bounds2.center) <= limit ? true : false;
-    }
-
     private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
     {
-        if (boundsExpired)
+        if (selfBoundsExpired)
         {
-            selfGroupBounds = CalculateGroupedBounds(transform);
-            boundsExpired = false;
+            selfGroupBounds = CalculateGroupedBounds(this.transform);
+            selfBoundsExpired = false;
         }
-        Bounds otherBounds = CalculateGroupedBounds(otherTransform);
-        Debug.Log("Distance between objects: " + Vector3.Distance(selfGroupBounds.center, otherBounds.center));
-        return Vector3.Distance(selfGroupBounds.center, otherBounds.center) <= limit ? true : false;
+        if (otherBoundsExpired)
+        {
+            otherGroupBounds = CalculateGroupedBounds(otherTransform);
+            otherBoundsExpired = false;
+        }
+        Debug.Log("Distance between objects: " + Vector3.Distance(selfGroupBounds.center, otherGroupBounds.center));
+        return Vector3.Distance(selfGroupBounds.center, otherGroupBounds.center) <= limit ? true : false;
     }
 
 
