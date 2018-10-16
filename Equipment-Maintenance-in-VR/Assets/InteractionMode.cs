@@ -5,7 +5,6 @@ using UnityEngine;
 public class InteractionMode : MonoBehaviour {
 
     /*
-     * Need to store self bounds so it doesnt calculate it nearly every frame, easy fix
      * Need to find way to check if other object is replacement part (tag, is prefab, etc)
      * Current bug: not all children of OutlinePart are getting isTrigger set to true. Manual fix: set value for all chilren in editor before runtime
      */
@@ -30,8 +29,7 @@ public class InteractionMode : MonoBehaviour {
     public Material acceptablePlacementMaterial;
     public Material unacceptablePlacementMaterial;
     private Dictionary<int, Material[]> originalMaterials;
-    private Dictionary<string, Collider[]> originalColliders; // Only going to be used if outlineIsTrigger is set to true
-    private Dictionary<int, Rigidbody> originalRigidbodies;
+    private Dictionary<string, Collider[]> originalColliders;
     private List<GameObject> allGameObjects;
     private bool isAcceptableRotation = false;
     private bool isAcceptablePosition = false;
@@ -57,7 +55,6 @@ public class InteractionMode : MonoBehaviour {
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
         originalColliders = SaveOriginalColliders(allGameObjects);
-        //originalRigidbodies = SaveOriginalRigidbodies(allGameObjects);
 
         // Extra init stuff
         switch (partMode)
