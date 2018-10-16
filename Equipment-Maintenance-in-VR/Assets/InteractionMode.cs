@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class InteractionMode : MonoBehaviour {
 
@@ -33,6 +34,10 @@ public class InteractionMode : MonoBehaviour {
     public Material acceptablePlacementMaterial;
     [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
     public Material unacceptablePlacementMaterial;
+
+    public UnityEvent onAcceptablePlacement;
+    public UnityEvent onUnacceptablePlacement;
+
     private Dictionary<int, Material[]> originalMaterials;
     private Dictionary<string, Collider[]> originalColliders;
     private List<GameObject> allGameObjects;
@@ -112,16 +117,19 @@ public class InteractionMode : MonoBehaviour {
         Debug.Log("IsAcceptableRotation: " + isAcceptableRotation + " IsAcceptablePosition: " + isAcceptablePosition);
         if((!checkRotation || isAcceptableRotation) && (!checkPosition || isAcceptablePosition))
         {
+            OnAcceptablePlacement();
             ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
         }
         else
         {
+            OnUnacceptablePlacement();
             ApplyMaterialToList(allGameObjects, unacceptablePlacementMaterial);
         }
         isAcceptableRotation = false;
         isAcceptablePosition = false;
     }
 
+    
     void OnTriggerExit(Collider other)
     {
         isAcceptableRotation = false;
@@ -339,5 +347,17 @@ public class InteractionMode : MonoBehaviour {
                 bounds.Encapsulate(renderer.bounds);
         }
         return bounds;
+    }
+
+
+    private void OnAcceptablePlacement()
+    {
+        onAcceptablePlacement.Invoke();
+    }
+
+
+    private void OnUnacceptablePlacement()
+    {
+        onUnacceptablePlacement.Invoke();
     }
 }
