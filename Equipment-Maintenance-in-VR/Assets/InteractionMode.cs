@@ -88,10 +88,6 @@ public class InteractionMode : MonoBehaviour {
     void OnTriggerEnter(Collider other)
     {
         Debug.Log(name + " OnTriggerEnter");
-        Debug.Log("Other Collider: " + other.name);
-        Debug.Log("Matching Collider: " + originalColliders[other.name][0]);
-
-
     }
 
     void OnTriggerStay(Collider other)
@@ -102,11 +98,12 @@ public class InteractionMode : MonoBehaviour {
             return;
         }
 
-        if (!checkRotation || IsWithinRangeOfRotation(transform.rotation, other.transform.rotation, acceptableDegrees))
+        Collider matchingCollider = originalColliders[other.name][0];
+        if (!checkRotation || IsWithinRangeOfRotation(matchingCollider.transform.rotation, other.transform.rotation, acceptableDegrees))
         {
             isAcceptableRotation = true;
         }
-        if((!checkRotation || isAcceptableRotation) && (!checkPosition || IsWithinRangeOfCenter(other.transform, acceptableMeters)))
+        if((!checkRotation || isAcceptableRotation) && (!checkPosition || CollidersWithinLimit(matchingCollider, other, acceptableMeters)))
         {
             isAcceptablePosition = true;
         }
@@ -306,6 +303,11 @@ public class InteractionMode : MonoBehaviour {
     {
         // Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
         return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
+    }
+
+    private bool CollidersWithinLimit(Collider collider1, Collider collider2, float limit)
+    {
+        return Vector3.Distance(collider1.bounds.center, collider2.bounds.center) <= limit ? true : false;
     }
 
     private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
