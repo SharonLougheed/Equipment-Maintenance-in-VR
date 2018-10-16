@@ -18,15 +18,20 @@ public class InteractionMode : MonoBehaviour {
      *  OutlinePart: Part is not collidable and by default has a translucent material to show where/how the part is oriented in an assembly.
      */
     public enum Mode { Unchanged, BackgroundPart, BackgroundPartCollider, OutlinePart, InteractablePart };
+    [Tooltip("Dictates the properties and behavier of the part")]
     public Mode partMode;
-    [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
     public bool checkRotation = true;
+    [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
     public float acceptableDegrees = 10f;
     public bool checkPosition = false;
-    public float acceptableMeters = 1.0f;
+    [Tooltip("Amount of deviation from a perfect overlap in position")]
+    public float acceptableMeters = 0.1f;
     public bool changeMode = false;
+    [Tooltip("Material used for showing where replacement part is supposed to go. Default is OrangeOutline")]
     public Material defaultOutlineMaterial;
+    [Tooltip("Material used for showing the user's replacement part is acceptable. Default is GreenOutline")]
     public Material acceptablePlacementMaterial;
+    [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
     public Material unacceptablePlacementMaterial;
     private Dictionary<int, Material[]> originalMaterials;
     private Dictionary<string, Collider[]> originalColliders;
