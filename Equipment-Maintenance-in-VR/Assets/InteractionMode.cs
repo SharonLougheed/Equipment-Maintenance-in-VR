@@ -24,7 +24,7 @@ public class InteractionMode : MonoBehaviour {
     public bool checkRotation = true;
     [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
     public float acceptableDegrees = 10f;
-    public bool checkPosition = false;
+    public bool checkPosition = true;
     [Tooltip("Amount of deviation from a perfect overlap in position")]
     public float acceptableMeters = 0.1f;
     public bool changeMode = false;
@@ -34,12 +34,14 @@ public class InteractionMode : MonoBehaviour {
     public Material acceptablePlacementMaterial;
     [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
     public Material unacceptablePlacementMaterial;
-
+    [Tooltip("Number of frames to skip between triggers")]
+    public int frameSkip = 30;
+    private int frameCount = 0;
     public UnityEvent onAcceptablePlacement;
     public UnityEvent onUnacceptablePlacement;
 
     private Dictionary<int, Material[]> originalMaterials;
-    private Dictionary<string, Collider[]> originalColliders;
+    private Dictionary<string, Collider> originalColliders;
     private List<GameObject> allGameObjects;
     private bool isAcceptableRotation = false;
     private bool isAcceptablePosition = false;
@@ -92,6 +94,10 @@ public class InteractionMode : MonoBehaviour {
         }
 	}
    
+    void FixedUpdate()
+    {
+        frameCount++;
+    }
     void OnTriggerEnter(Collider other)
     {
         Debug.Log(name + " OnTriggerEnter");
@@ -100,12 +106,18 @@ public class InteractionMode : MonoBehaviour {
     void OnTriggerStay(Collider other)
     {
         Debug.Log(name + " OnTriggerStay");
-        if (partMode != Mode.OutlinePart)
+        Collider matchingCollider;
+
+        // TODO implement tag system to check that other is part of a replacement part
+        if (frameCount % frameSkip != 0
+            || partMode != Mode.OutlinePart
+            || !originalColliders.TryGetValue(other.name, out matchingCollider))
         {
             return;
         }
-
-        Collider matchingCollider = originalColliders[other.name][0];
+        frameCount = 1;
+        // Confirmed that the other part is an intended replacement
+        // Condition checking
         if (!checkRotation || IsWithinRangeOfRotation(matchingCollider.transform.rotation, other.transform.rotation, acceptableDegrees))
         {
             isAcceptableRotation = true;
@@ -222,13 +234,13 @@ public class InteractionMode : MonoBehaviour {
         return ogMaterials;
     }
 
-    private Dictionary<string, Collider[]> SaveOriginalColliders(List<GameObject> gameObjects)
+    private Dictionary<string, Collider> SaveOriginalColliders(List<GameObject> gameObjects)
     {
-        Dictionary<string, Collider[]> ogColliders = new Dictionary<string, Collider[]>();
+        Dictionary<string, Collider> ogColliders = new Dictionary<string, Collider>();
         foreach (GameObject obj in gameObjects)
         {
-            Collider[] colliders = obj.GetComponents<Collider>();
-            ogColliders.Add(obj.name, colliders);
+            Collider collider = obj.GetComponent<Collider>();
+            ogColliders.Add(obj.name, collider);
         }
         return ogColliders;
     }
@@ -244,17 +256,6 @@ public class InteractionMode : MonoBehaviour {
         return ogRigidbodies;
     }
 
-    private void ApplyCollidersToParent()
-    {
-        foreach(Collider[] objColliders in originalColliders.Values)
-        {
-            foreach(Collider collider in objColliders)
-            {
-                // If collider is a primitive collider then add it to the parent
-                // If mesh collider then create closest primitive box collider and add that to parent
-            }
-        }
-    }
 
     private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
     {
