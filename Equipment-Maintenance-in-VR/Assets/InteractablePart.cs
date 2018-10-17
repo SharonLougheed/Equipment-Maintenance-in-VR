@@ -2,23 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using Valve.VR.InteractionSystem;
 
-public class InteractionMode : MonoBehaviour {
+[RequireComponent(typeof(Interactable))]
+public class InteractablePart : MonoBehaviour {
 
-    /*
-     * Need to find way to check if other object is replacement part (tag, is prefab, etc)
-     * Current bug: not all children of OutlinePart are getting isTrigger set to true. Manual fix: set value for all chilren in editor before runtime
-     */
+    // Interactable related
+    private Hand.AttachmentFlags attachmentFlags = Hand.defaultAttachmentFlags & (~Hand.AttachmentFlags.SnapOnAttach) & (~Hand.AttachmentFlags.DetachOthers) & (~Hand.AttachmentFlags.VelocityMovement);
 
-    /*
-     * Part Mode states
-     *  Unchanged: no changes will be made to this part
-     *  BackgroundPart: a background part is not interactable and not does not have an active collider.
-     *  BackgroundPartCollider: a background part is not interactable but does collide with interactable objects.
-     *  InteractablePart: part is interactable with an OutlinePart.
-     *  OutlinePart: Part is not collidable and by default has a translucent material to show where/how the part is oriented in an assembly.
-     */
-    public enum Mode { Unchanged, BackgroundPart, BackgroundPartCollider, OutlinePart, InteractablePart };
+    private Interactable interactable;
+
+    // Part replacement related
+    public enum Mode { OutlinePart, InteractablePart };
     [Tooltip("Dictates the properties and behavier of the part")]
     public Mode partMode;
     public bool checkRotation = true;
@@ -27,7 +22,6 @@ public class InteractionMode : MonoBehaviour {
     public bool checkPosition = true;
     [Tooltip("Amount of deviation from a perfect overlap in position")]
     public float acceptableMeters = 0.1f;
-    public bool changeMode = false;
     [Tooltip("Material used for showing where replacement part is supposed to go. Default is OrangeOutline")]
     public Material defaultOutlineMaterial;
     [Tooltip("Material used for showing the user's replacement part is acceptable. Default is GreenOutline")]
@@ -50,8 +44,10 @@ public class InteractionMode : MonoBehaviour {
     private bool selfBoundsExpired = true;
     private bool otherBoundsExpired = true;
 
-    // Use this for initialization
-    void Start () {
+    //-------------------------------------------------
+    void Awake()
+    {
+        interactable = this.GetComponent<Interactable>();
         if (defaultOutlineMaterial == null)
         {
             defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
@@ -64,6 +60,11 @@ public class InteractionMode : MonoBehaviour {
         {
             unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
         }
+    }
+
+
+    // Use this for initialization
+    void Start () {
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
         originalColliders = SaveOriginalColliders(allGameObjects);
@@ -84,24 +85,18 @@ public class InteractionMode : MonoBehaviour {
         ApplyModeDefaults(allGameObjects);
     }
 	
+
 	// Update is called once per frame
 	void Update () {
-        if (changeMode)
-        {
-            allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
-            ApplyModeDefaults(allGameObjects);
-            changeMode = false;
-        }
+		
 	}
-   
+
+
     void FixedUpdate()
     {
         frameCount++;
     }
-    void OnTriggerEnter(Collider other)
-    {
-        Debug.Log(name + " OnTriggerEnter");
-    }
+
 
     void OnTriggerStay(Collider other)
     {
@@ -122,12 +117,12 @@ public class InteractionMode : MonoBehaviour {
         {
             isAcceptableRotation = true;
         }
-        if((!checkRotation || isAcceptableRotation) && (!checkPosition || CollidersWithinLimit(matchingCollider, other, acceptableMeters)))
+        if ((!checkRotation || isAcceptableRotation) && (!checkPosition || CollidersWithinLimit(matchingCollider, other, acceptableMeters)))
         {
             isAcceptablePosition = true;
         }
         Debug.Log("IsAcceptableRotation: " + isAcceptableRotation + " IsAcceptablePosition: " + isAcceptablePosition);
-        if((!checkRotation || isAcceptableRotation) && (!checkPosition || isAcceptablePosition))
+        if ((!checkRotation || isAcceptableRotation) && (!checkPosition || isAcceptablePosition))
         {
             OnAcceptablePlacement();
             ApplyMaterialToList(allGameObjects, acceptablePlacementMaterial);
@@ -141,7 +136,7 @@ public class InteractionMode : MonoBehaviour {
         isAcceptablePosition = false;
     }
 
-    
+
     void OnTriggerExit(Collider other)
     {
         isAcceptableRotation = false;
@@ -151,29 +146,34 @@ public class InteractionMode : MonoBehaviour {
             ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
 
+
     void ApplyModeDefaultsToSelf()
-    { 
+    {
         ApplyModeDefaults(gameObject);
     }
+
 
     void ApplyModeDefaultsToChildren()
     {
         // Using transform because you cannot get children as gameobjects
         Transform[] transforms = GetComponentsInChildren<Transform>();
-        foreach(Transform childTransform in transforms)
+        foreach (Transform childTransform in transforms)
         {
             ApplyModeDefaults(childTransform.gameObject);
         }
     }
 
+
     void ApplyModeDefaults(List<GameObject> gameObjects)
     {
         Debug.Log("Total objects: " + gameObjects.Count);
-        for(int i = 0; i < gameObjects.Count; i++)
+        for (int i = 0; i < gameObjects.Count; i++)
         {
             ApplyModeDefaults(gameObjects[i]);
         }
     }
+
+
     void ApplyModeDefaults(GameObject obj)
     {
         Collider collider = obj.GetComponent<Collider>();
@@ -181,12 +181,7 @@ public class InteractionMode : MonoBehaviour {
         Renderer renderer = obj.GetComponent<Renderer>();
         switch (partMode)
         {
-            case Mode.BackgroundPart:
 
-                break;
-            case Mode.BackgroundPartCollider:
-
-                break;
             case Mode.OutlinePart:
                 if (collider != null)
                 {
@@ -222,10 +217,11 @@ public class InteractionMode : MonoBehaviour {
         }
     }
 
+
     private Dictionary<int, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
     {
         Dictionary<int, Material[]> ogMaterials = new Dictionary<int, Material[]>();
-        foreach(GameObject obj in gameObjects)
+        foreach (GameObject obj in gameObjects)
         {
             Renderer renderer = obj.GetComponent<Renderer>();
             if (renderer != null)
@@ -233,6 +229,7 @@ public class InteractionMode : MonoBehaviour {
         }
         return ogMaterials;
     }
+
 
     private Dictionary<string, Collider> SaveOriginalColliders(List<GameObject> gameObjects)
     {
@@ -244,6 +241,7 @@ public class InteractionMode : MonoBehaviour {
         }
         return ogColliders;
     }
+
 
     private Dictionary<int, Rigidbody> SaveOriginalRigidbodies(List<GameObject> gameObjects)
     {
@@ -262,24 +260,26 @@ public class InteractionMode : MonoBehaviour {
         for (int i = 0; i < gameObjects.Count; i++)
         {
             Renderer renderer = gameObjects[i].GetComponent<Renderer>();
-            if(renderer != null)
+            if (renderer != null)
                 renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
         }
     }
 
+
     private Material[] GetOriginalMaterials(Renderer renderer)
     {
-        if(renderer != null)
+        if (renderer != null)
         {
             int InstanceId = renderer.gameObject.GetInstanceID();
             if (originalMaterials.ContainsKey(InstanceId))
             {
                 return originalMaterials[InstanceId];
             }
-            
+
         }
         return null;
     }
+
 
     private Material[] GetArrayOfMaterial(Material mat, int size)
     {
@@ -290,6 +290,7 @@ public class InteractionMode : MonoBehaviour {
         }
         return materials;
     }
+
 
     private List<GameObject> FindAllGameObjectsAtOrBelow(GameObject start)
     {
@@ -305,7 +306,7 @@ public class InteractionMode : MonoBehaviour {
 
         foreach (Transform childTransform in transforms)
         {
-            if(childTransform.parent == start.transform)
+            if (childTransform.parent == start.transform)
                 FindAllGameObjectsAtOrBelow(childTransform.gameObject, objects);
         }
     }
@@ -342,9 +343,9 @@ public class InteractionMode : MonoBehaviour {
     {
         Renderer[] renderers = trans.GetComponentsInChildren<Renderer>();
         Bounds bounds = renderers[0].bounds; // Might need to check that renderer is null first
-        foreach(Renderer renderer in renderers)
+        foreach (Renderer renderer in renderers)
         {
-            if(renderer != null)
+            if (renderer != null)
                 bounds.Encapsulate(renderer.bounds);
         }
         return bounds;
@@ -360,5 +361,69 @@ public class InteractionMode : MonoBehaviour {
     private void OnUnacceptablePlacement()
     {
         onUnacceptablePlacement.Invoke();
+    }
+
+
+    //-------------------------------------------------
+    // Called when a Hand starts hovering over this object
+    //-------------------------------------------------
+    private void OnHandHoverBegin(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called when a Hand stops hovering over this object
+    //-------------------------------------------------
+    private void OnHandHoverEnd(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called every Update() while a Hand is hovering over this object
+    //-------------------------------------------------
+    private void HandHoverUpdate(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called when this GameObject becomes attached to the hand
+    //-------------------------------------------------
+    private void OnAttachedToHand(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called when this GameObject is detached from the hand
+    //-------------------------------------------------
+    private void OnDetachedFromHand(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called every Update() while this GameObject is attached to the hand
+    //-------------------------------------------------
+    private void HandAttachedUpdate(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called when this attached GameObject becomes the primary attached object
+    //-------------------------------------------------
+    private void OnHandFocusAcquired(Hand hand)
+    {
+    }
+
+
+    //-------------------------------------------------
+    // Called when another attached GameObject becomes the primary attached object
+    //-------------------------------------------------
+    private void OnHandFocusLost(Hand hand)
+    {
     }
 }
