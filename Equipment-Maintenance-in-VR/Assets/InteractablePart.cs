@@ -47,7 +47,6 @@ public class InteractablePart : MonoBehaviour {
     //-------------------------------------------------
     void Awake()
     {
-        interactable = this.GetComponent<Interactable>();
         if (defaultOutlineMaterial == null)
         {
             defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
@@ -65,14 +64,18 @@ public class InteractablePart : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+        interactable = this.GetComponent<Interactable>();
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
         originalColliders = SaveOriginalColliders(allGameObjects);
+
 
         // Extra init stuff
         switch (partMode)
         {
             case Mode.OutlinePart:
+                interactable.highlightOnHover = false;
+
                 // Make sure main gameobject has a rigidbody so that a compound rigidbody can be created (any lower down rigidbodies will be destroyed later when applying defaults)
                 if (gameObject.GetComponent<Rigidbody>() == null)
                 {
@@ -385,6 +388,34 @@ public class InteractablePart : MonoBehaviour {
     //-------------------------------------------------
     private void HandHoverUpdate(Hand hand)
     {
+        switch (partMode)
+        {
+            case Mode.InteractablePart:
+                GrabTypes startingGrabType = hand.GetGrabStarting();
+                bool isGrabEnding = hand.IsGrabEnding(this.gameObject);
+
+                if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
+                {
+                    // Call this to continue receiving HandHoverUpdate messages,
+                    // and prevent the hand from hovering over anything else
+                    hand.HoverLock(interactable);
+
+                    // Attach this object to the hand
+                    hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
+                }
+                else if (isGrabEnding)
+                {
+                    // Detach this object from the hand
+                    hand.DetachObject(gameObject);
+
+                    // Call this to undo HoverLock
+                    hand.HoverUnlock(interactable);
+                }
+                break;
+            case Mode.OutlinePart:
+                break;
+        }
+        
     }
 
 
