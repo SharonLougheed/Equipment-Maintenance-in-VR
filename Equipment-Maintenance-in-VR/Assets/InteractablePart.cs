@@ -13,19 +13,18 @@ public class InteractablePart : MonoBehaviour {
 
     private Transform transform;
     public Transform endPointTransform;
-    
+   
     public float acceptableDegreesFromEndPoint = 10f;
     public float acceptableMetersFromEndPoint = 0.1f;
-    public bool detachOnAccept = true;
+    public bool snapAndDetach = true;
     public int frameSkip = 30;
     private int frameCount = 0;
     public UnityEvent onAcceptablePlacement;
-    public UnityEvent onUnacceptablePlacement;
     private bool wasAcceptable = false;
     // Use this for initialization
     void Start () {
         interactable = this.GetComponent<Interactable>();
-        transform = this.GetComponent<Transform>();
+        transform = gameObject.transform;
     }
 	
 
@@ -44,12 +43,6 @@ public class InteractablePart : MonoBehaviour {
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
-    }
-
-
-    private void OnUnacceptablePlacement()
-    {
-        onUnacceptablePlacement.Invoke();
     }
 
     public void VibrateController(Hand hand, float durationSec, float frequency, float amplitude)
@@ -123,31 +116,52 @@ public class InteractablePart : MonoBehaviour {
 
             // Call this to undo HoverLock
             hand.HoverUnlock(interactable);
+
+            // For snapping
+            if (IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
+                && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
+            {
+                OnAcceptablePlacement();
+                wasAcceptable = true;
+                // Move to End point transform
+                transform.position = endPointTransform.position;
+                transform.rotation = endPointTransform.rotation;
+                endPointTransform.gameObject.SetActive(false);
+                
+            }
+            else
+            {
+                wasAcceptable = false;
+            }
         }
 
         if (interactable.attachedToHand != null && !isGrabEnding && endPointTransform != null)
         {
-            // Check if position is close to endPointTransform
            if(IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
                 && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
             {
-                Debug.Log("ACCEPTABLE PLACEMENT");
                 if (!wasAcceptable)
                 {
+                    OnAcceptablePlacement();
                     wasAcceptable = true;
-                    if (detachOnAccept)
+                    if (snapAndDetach)
                     {
                         // Detach this object from the hand
                         hand.DetachObject(gameObject);
 
                         // Call this to undo HoverLock
                         hand.HoverUnlock(interactable);
-
+                           
                         // Move to End point transform
-
                         transform.position = endPointTransform.position;
                         transform.rotation = endPointTransform.rotation;
+
+                        endPointTransform.gameObject.SetActive(false);
                     }
+                }
+                else
+                {
+                    endPointTransform.gameObject.SetActive(true);
                 }
             }
             else
@@ -160,6 +174,7 @@ public class InteractablePart : MonoBehaviour {
     }
 
 
+   
     //-------------------------------------------------
     // Called when this GameObject becomes attached to the hand
     //-------------------------------------------------
