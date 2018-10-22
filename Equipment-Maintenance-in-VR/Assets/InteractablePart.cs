@@ -74,8 +74,9 @@ public class InteractablePart : MonoBehaviour {
         switch (partMode)
         {
             case Mode.OutlinePart:
-                interactable.highlightOnHover = false;
 
+                interactable.highlightOnHover = false;
+                interactable.enabled = false;
                 // Make sure main gameobject has a rigidbody so that a compound rigidbody can be created (any lower down rigidbodies will be destroyed later when applying defaults)
                 if (gameObject.GetComponent<Rigidbody>() == null)
                 {
@@ -366,12 +367,27 @@ public class InteractablePart : MonoBehaviour {
         onUnacceptablePlacement.Invoke();
     }
 
+    public void VibrateController(Hand hand, float durationSec, float frequency, float amplitude)
+    {
+        StartCoroutine(VibrateControllerContinuous(hand, durationSec, frequency, amplitude));
+    }
+
+
+    IEnumerator VibrateControllerContinuous(Hand hand, float durationSec, float frequency, float amplitude)
+    {
+        // if true the pulse will happen in a sawtooth pattern like this /|/|/|/|
+        // else it will happen opposite like this |\|\|\|\
+        hand.TriggerHapticPulse(durationSec, frequency, amplitude);
+        yield break;
+
+    }
 
     //-------------------------------------------------
     // Called when a Hand starts hovering over this object
     //-------------------------------------------------
     private void OnHandHoverBegin(Hand hand)
     {
+        VibrateController(hand, 0.15f, 5f, 1f);
     }
 
 
