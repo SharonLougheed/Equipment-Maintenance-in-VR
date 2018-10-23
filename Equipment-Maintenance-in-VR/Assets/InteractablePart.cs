@@ -17,8 +17,6 @@ public class InteractablePart : MonoBehaviour {
     public float acceptableDegreesFromEndPoint = 10f;
     public float acceptableMetersFromEndPoint = 0.1f;
     public bool snapAndDetach = true;
-    public int frameSkip = 30;
-    private int frameCount = 0;
     public UnityEvent onAcceptablePlacement;
     private bool wasAcceptable = false;
     // Use this for initialization
@@ -26,19 +24,6 @@ public class InteractablePart : MonoBehaviour {
         interactable = this.GetComponent<Interactable>();
         transform = gameObject.transform;
     }
-	
-
-	// Update is called once per frame
-	void Update () {
-		
-	}
-
-
-    void FixedUpdate()
-    {
-        frameCount++;
-    }
-
 
     private void OnAcceptablePlacement()
     {
@@ -93,7 +78,6 @@ public class InteractablePart : MonoBehaviour {
     //-------------------------------------------------
     private void HandHoverUpdate(Hand hand)
     {
-        
         GrabTypes startingGrabType = hand.GetGrabStarting();
         bool isGrabEnding = hand.IsGrabEnding(this.gameObject);
 
@@ -102,12 +86,8 @@ public class InteractablePart : MonoBehaviour {
             // Call this to continue receiving HandHoverUpdate messages,
             // and prevent the hand from hovering over anything else
             hand.HoverLock(interactable);
-
             // Attach this object to the hand
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
-
-
-
         }
         else if (isGrabEnding)
         {
@@ -173,8 +153,6 @@ public class InteractablePart : MonoBehaviour {
 
     }
 
-
-   
     //-------------------------------------------------
     // Called when this GameObject becomes attached to the hand
     //-------------------------------------------------

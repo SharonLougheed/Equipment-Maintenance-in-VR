@@ -8,7 +8,7 @@ public class OutlinePart : MonoBehaviour {
 
     public enum Mode { OutlinePart, InteractablePart };
     [Tooltip("Dictates the properties and behavier of the part")]
-    private Mode partMode = Mode.OutlinePart;
+    // private Mode partMode = Mode.OutlinePart;
     public bool checkRotation = true;
     [Tooltip("Amount of deviation from a perfect rotation match on all axes")]
     public float acceptableDegrees = 10f;
@@ -60,29 +60,14 @@ public class OutlinePart : MonoBehaviour {
         allGameObjects = FindAllGameObjectsAtOrBelow(gameObject);
         originalMaterials = SaveOriginalMaterials(allGameObjects);
         originalColliders = SaveOriginalColliders(allGameObjects);
-
-
-        // Extra init stuff
-        switch (partMode)
+        // Make sure main gameobject has a rigidbody so that a compound rigidbody can be created (any lower down rigidbodies will be destroyed later when applying defaults)
+        if (gameObject.GetComponent<Rigidbody>() == null)
         {
-            case Mode.OutlinePart:
-                // Make sure main gameobject has a rigidbody so that a compound rigidbody can be created (any lower down rigidbodies will be destroyed later when applying defaults)
-                if (gameObject.GetComponent<Rigidbody>() == null)
-                {
-                    gameObject.AddComponent<Rigidbody>().useGravity = false;
-                }
-                // TODO figure out why default material is not being set in ApplyModeDefaults, but this works for now
-                ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
-                break;
+            gameObject.AddComponent<Rigidbody>().useGravity = false;
         }
+        // TODO figure out why default material is not being set in ApplyModeDefaults, but this works for now
+        ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);       
         ApplyModeDefaults(allGameObjects);
-    }
-
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
 
@@ -97,9 +82,7 @@ public class OutlinePart : MonoBehaviour {
         // Debug.Log(name + " OnTriggerStay");
         Collider matchingCollider;
 
-        // TODO implement tag system to check that other is part of a replacement part
         if (frameCount % frameSkip != 0
-            || partMode != Mode.OutlinePart
             || !originalColliders.TryGetValue(other.name, out matchingCollider))
         {
             return;
@@ -136,8 +119,7 @@ public class OutlinePart : MonoBehaviour {
         isAcceptableRotation = false;
         isAcceptablePosition = false;
         otherBoundsExpired = true;
-        if (partMode == Mode.OutlinePart)
-            ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
+        ApplyMaterialToList(allGameObjects, defaultOutlineMaterial);
     }
 
 
@@ -172,41 +154,27 @@ public class OutlinePart : MonoBehaviour {
         Collider collider = obj.GetComponent<Collider>();
         Rigidbody rigidbody = obj.GetComponent<Rigidbody>();
         Renderer renderer = obj.GetComponent<Renderer>();
-        switch (partMode)
+        
+        if (collider != null)
         {
-
-            case Mode.OutlinePart:
-                if (collider != null)
-                {
-                    collider.isTrigger = true;
-                    collider.enabled = true;
-                }
-                if (rigidbody != null)
-                {
-                    if (rigidbody != gameObject.GetComponent<Rigidbody>())
-                    {
-                        Destroy(rigidbody);
-                    }
-                    else
-                    {
-                        rigidbody.useGravity = false;
-                        rigidbody.isKinematic = true;
-                    }
-                }
-                if (renderer != null)
-                {
-                    renderer.materials = GetArrayOfMaterial(defaultOutlineMaterial, renderer.materials.Length);
-                }
-                break;
-            case Mode.InteractablePart:
-                if (collider != null)
-                {
-                    collider.isTrigger = false;
-                    collider.enabled = true;
-                }
-                if (renderer != null)
-                    renderer.materials = GetOriginalMaterials(renderer);
-                break;
+            collider.isTrigger = true;
+            collider.enabled = true;
+        }
+        if (rigidbody != null)
+        {
+            if (rigidbody != gameObject.GetComponent<Rigidbody>())
+            {
+                Destroy(rigidbody);
+            }
+            else
+            {
+                rigidbody.useGravity = false;
+                rigidbody.isKinematic = true;
+            }
+        }
+        if (renderer != null)
+        {
+            renderer.materials = GetArrayOfMaterial(defaultOutlineMaterial, renderer.materials.Length);
         }
     }
 
@@ -347,9 +315,6 @@ public class OutlinePart : MonoBehaviour {
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
-        // Release attached object
-        // move to transform of the outline part
-        // remove or hide the outline part
     }
 
 
