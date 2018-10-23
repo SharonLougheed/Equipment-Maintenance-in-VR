@@ -94,7 +94,7 @@ public class InteractablePart : MonoBehaviour {
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
 
             // If it was picked up from the end point location apply gravity and kinematic again
-            if(transform.position == endPointTransform.position)
+            if(wasAcceptable)
             {
                 rigidbody.useGravity = true;
                 rigidbody.isKinematic = true;
@@ -139,6 +139,8 @@ public class InteractablePart : MonoBehaviour {
                     wasAcceptable = true;
                     if (snapAndDetach)
                     {
+                        rigidbody.useGravity = false;
+                        rigidbody.isKinematic = true;
                         // Detach this object from the hand
                         hand.DetachObject(gameObject);
                         // Call this to undo HoverLock
