@@ -22,6 +22,12 @@ public class InteractablePart : MonoBehaviour {
     private Transform transform;
     private Rigidbody rigidbody;
     private bool wasAcceptable = false;
+    private Bounds selfGroupBounds;
+    private Bounds otherGroupBounds;
+    private Vector3 selfCenter;
+    private Vector3 otherCenter;
+    private bool selfBoundsExpired = true;
+    private bool otherBoundsExpired = true;
     // Use this for initialization
     void Start () {
         interactable = GetComponent<Interactable>();
@@ -49,16 +55,61 @@ public class InteractablePart : MonoBehaviour {
 
     }
 
-    private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
-    {
-        return Vector3.Distance(gameObject.transform.position, otherTransform.position) <= limit ? true : false;
-    }
 
     private bool IsWithinRangeOfRotation(Quaternion rot1, Quaternion rot2, float limit)
     {
         // Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
         return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
     }
+
+    private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
+    {
+        if (selfBoundsExpired)
+        {
+            selfGroupBounds = CalculateGroupBounds(this.transform);
+            //selfBoundsExpired = false;
+        }
+        if (otherBoundsExpired)
+        {
+            otherGroupBounds = CalculateGroupBounds(otherTransform);
+            otherBoundsExpired = false;
+        }
+        // self bounds expire every time so that the new center is always recalculated
+        selfBoundsExpired = true;
+        selfCenter = selfGroupBounds.center;
+        otherCenter = otherGroupBounds.center;
+        //Debug.Log(this.name  + "Position: " + this.transform.position + "Center: " + selfCenter );
+        //Debug.Log(otherTransform.gameObject.name + "Position: " + otherTransform.position + "Center: " + otherCenter);
+        //Debug.Log("Distance: " + Vector3.Distance(selfCenter, otherCenter));
+        return Vector3.Distance(selfCenter, otherCenter) <= limit ? true : false;
+    }
+
+
+    private Bounds CalculateGroupBounds(params Transform[] aObjects)
+    {
+        Bounds b = new Bounds();
+        foreach (var o in aObjects)
+        {
+            var renderers = o.GetComponentsInChildren<Renderer>();
+            foreach (var r in renderers)
+            {
+                if (b.size == Vector3.zero)
+                    b = r.bounds;
+                else
+                    b.Encapsulate(r.bounds);
+            }
+            var colliders = o.GetComponentsInChildren<Collider>();
+            foreach (var c in colliders)
+            {
+                if (b.size == Vector3.zero)
+                    b = c.bounds;
+                else
+                    b.Encapsulate(c.bounds);
+            }
+        } 
+        return b;
+    }
+
 
     //-------------------------------------------------
     // Called when a Hand starts hovering over this object
@@ -92,13 +143,7 @@ public class InteractablePart : MonoBehaviour {
             hand.HoverLock(interactable);
             // Attach this object to the hand
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
-
-            // If it was picked up from the end point location apply gravity and kinematic again
-            if(wasAcceptable)
-            {
-                rigidbody.useGravity = true;
-                rigidbody.isKinematic = true;
-            }
+            endPointTransform.gameObject.SetActive(true);
         }
         else if (isGrabEnding)
         {
@@ -125,6 +170,8 @@ public class InteractablePart : MonoBehaviour {
             else
             {
                 wasAcceptable = false;
+                rigidbody.useGravity = true;
+                rigidbody.isKinematic = true;
             }
         }
 
@@ -164,6 +211,7 @@ public class InteractablePart : MonoBehaviour {
         }
 
     }
+
 
     //-------------------------------------------------
     // Called when this GameObject becomes attached to the hand
