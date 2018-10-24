@@ -13,32 +13,140 @@ public class InteractablePart : MonoBehaviour {
 
 
     public Transform endPointTransform;
-   
+    public bool showEndPointOutline = true;
     public float acceptableDegreesFromEndPoint = 10f;
     public float acceptableMetersFromEndPoint = 0.1f;
     public bool snapAndDetach = true;
     public UnityEvent onAcceptablePlacement;
+    [Tooltip("Material used for showing where replacement part is supposed to go. Default is OrangeOutline")]
+    public Material defaultOutlineMaterial;
+    [Tooltip("Material used for showing the user's replacement part is acceptable. Default is GreenOutline")]
+    public Material acceptablePlacementMaterial;
+    [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
+    public Material unacceptablePlacementMaterial;
 
     private Transform transform;
     private Rigidbody rigidbody;
-    private bool wasAcceptable = false;
     private Bounds selfGroupBounds;
     private Bounds otherGroupBounds;
     private Vector3 selfCenter;
     private Vector3 otherCenter;
     private bool selfBoundsExpired = true;
     private bool otherBoundsExpired = true;
-    // Use this for initialization
+    private List<GameObject> endPointGameObjects;
+    private Dictionary<int, Material[]> endPointOriginalMaterials;
+    private enum PlacementStates { Default, UnacceptableHover, AcceptableHover, AcceptablePlaced };
+    private PlacementStates currentPlacementState = PlacementStates.Default;
+
+    void Awake()
+    {
+        if (defaultOutlineMaterial == null)
+        {
+            defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
+        }
+        if (acceptablePlacementMaterial == null)
+        {
+            acceptablePlacementMaterial = Resources.Load("Materials/OutlineMatGreen") as Material;
+        }
+        if (unacceptablePlacementMaterial == null)
+        {
+            unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
+        }
+    }
+
+
     void Start () {
         interactable = GetComponent<Interactable>();
         transform = GetComponent<Transform>();
         rigidbody = GetComponent<Rigidbody>();
+        InitializeEndPoint();
+    }
+
+
+    private Dictionary<int, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
+    {
+        Dictionary<int, Material[]> ogMaterials = new Dictionary<int, Material[]>();
+        foreach (GameObject obj in gameObjects)
+        {
+            Renderer renderer = obj.GetComponent<Renderer>();
+            if (renderer != null)
+                ogMaterials.Add(obj.GetInstanceID(), renderer.materials);
+        }
+        return ogMaterials;
+    }
+
+
+    private List<GameObject> GetAllGameObjectsAtOrBelow(GameObject start)
+    {
+        List<GameObject> gameObjects = new List<GameObject>();
+        Transform[] transforms = start.GetComponentsInChildren<Transform>();
+        foreach (Transform childTransform in transforms)
+            gameObjects.Add(childTransform.gameObject);
+        return gameObjects;
+    }
+
+   
+    private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
+    {
+        for (int i = 0; i < gameObjects.Count; i++)
+        {
+            Renderer renderer = gameObjects[i].GetComponent<Renderer>();
+            if (renderer != null)
+                renderer.materials = GetArrayOfMaterial(mat, renderer.materials.Length);
+        }
+    }
+
+
+    private Material[] GetArrayOfMaterial(Material mat, int size)
+    {
+        Material[] materials = new Material[size];
+        for (int i = 0; i < size; i++)
+        {
+            materials[i] = mat;
+        }
+        return materials;
+    }
+
+    private void InitializeEndPoint()
+    {
+        if(endPointTransform != null)
+        {
+            endPointGameObjects = GetAllGameObjectsAtOrBelow(endPointTransform.gameObject);
+            endPointOriginalMaterials = SaveOriginalMaterials(endPointGameObjects);
+            if (showEndPointOutline)
+            {
+                ApplyMaterialToList(endPointGameObjects, defaultOutlineMaterial);
+            }
+            else
+            {
+                SetEndPointVisibility(false);
+            }
+            for (int i = 0; i < endPointGameObjects.Count; i++)
+            {
+                Collider collider = endPointGameObjects[i].GetComponent<Collider>();
+                if (collider != null)
+                {
+                    collider.isTrigger = true;
+                }
+            }
+        }
+    }
+
+
+    private void SetEndPointVisibility(bool isVisible)
+    {
+        Renderer[] renderers = endPointTransform.gameObject.GetComponentsInChildren<Renderer>();
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].enabled = isVisible;
+        }
     }
 
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
     }
+
 
     public void VibrateController(Hand hand, float durationSec, float frequency, float amplitude)
     {
@@ -48,11 +156,8 @@ public class InteractablePart : MonoBehaviour {
 
     IEnumerator VibrateControllerContinuous(Hand hand, float durationSec, float frequency, float amplitude)
     {
-        // if true the pulse will happen in a sawtooth pattern like this /|/|/|/|
-        // else it will happen opposite like this |\|\|\|\
         hand.TriggerHapticPulse(durationSec, frequency, amplitude);
         yield break;
-
     }
 
 
@@ -143,7 +248,6 @@ public class InteractablePart : MonoBehaviour {
             hand.HoverLock(interactable);
             // Attach this object to the hand
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
-            endPointTransform.gameObject.SetActive(true);
         }
         else if (isGrabEnding)
         {
@@ -152,42 +256,34 @@ public class InteractablePart : MonoBehaviour {
             // Call this to undo HoverLock
             hand.HoverUnlock(interactable);
             // For snapping
-            if (IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
+            if (endPointTransform != null
+                && IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
                 && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
             {
-                OnAcceptablePlacement();
-                wasAcceptable = true;
-                // stay in place when placed correctly
-                rigidbody.useGravity = false;
-                rigidbody.isKinematic = true;
-
                 // Move to End point transform
                 transform.position = endPointTransform.position;
                 transform.rotation = endPointTransform.rotation;
                 endPointTransform.gameObject.SetActive(false);
-                
+                UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                OnAcceptablePlacement();
             }
             else
             {
-                wasAcceptable = false;
-                rigidbody.useGravity = true;
-                rigidbody.isKinematic = true;
+                UpdatePlacementState(PlacementStates.Default);
             }
         }
 
-        if (interactable.attachedToHand != null && !isGrabEnding && endPointTransform != null)
+        if (endPointTransform != null
+            && interactable.attachedToHand != null
+            && !isGrabEnding)
         {
            if(IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
                 && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
             {
-                if (!wasAcceptable)
+                if (currentPlacementState != PlacementStates.AcceptableHover)
                 {
-                    OnAcceptablePlacement();
-                    wasAcceptable = true;
                     if (snapAndDetach)
                     {
-                        rigidbody.useGravity = false;
-                        rigidbody.isKinematic = true;
                         // Detach this object from the hand
                         hand.DetachObject(gameObject);
                         // Call this to undo HoverLock
@@ -195,8 +291,14 @@ public class InteractablePart : MonoBehaviour {
                         // Move to End point transform
                         transform.position = endPointTransform.position;
                         transform.rotation = endPointTransform.rotation;
-                        endPointTransform.gameObject.SetActive(false);
+
+                        UpdatePlacementState(PlacementStates.AcceptablePlaced);
                     }
+                    else
+                    {
+                        UpdatePlacementState(PlacementStates.AcceptableHover);
+                    }
+                    OnAcceptablePlacement();
                 }
                 else
                 {
@@ -205,13 +307,58 @@ public class InteractablePart : MonoBehaviour {
             }
             else
             {
-                wasAcceptable = false;
+                UpdatePlacementState(PlacementStates.UnacceptableHover);
             }
 
         }
 
     }
 
+
+    private void UpdatePlacementState(PlacementStates newState)
+    {
+        if(newState != currentPlacementState)
+        {
+            // Make changes on Interactable Part to reflect state change
+            switch (newState)
+            {
+                case PlacementStates.Default:
+                    rigidbody.isKinematic = false;
+                    rigidbody.useGravity = true;
+                    break;
+                case PlacementStates.AcceptablePlaced:
+                    rigidbody.isKinematic = true;
+                    rigidbody.useGravity = false;
+                    break;
+                case PlacementStates.UnacceptableHover:
+                case PlacementStates.AcceptableHover:
+                    break;
+            }
+            // Make changes on End Point Part to reflect state change (only if its going to be visible)
+            if (endPointTransform != null && showEndPointOutline)
+            {
+                if(currentPlacementState == PlacementStates.AcceptablePlaced)
+                {
+                    endPointTransform.gameObject.SetActive(true);
+                }
+                switch (newState)
+                {
+                    case PlacementStates.Default:
+                        ApplyMaterialToList(endPointGameObjects, defaultOutlineMaterial);
+                        break;
+                    case PlacementStates.UnacceptableHover:
+                        ApplyMaterialToList(endPointGameObjects, unacceptablePlacementMaterial);
+                        break;
+                    case PlacementStates.AcceptableHover:
+                        ApplyMaterialToList(endPointGameObjects, acceptablePlacementMaterial);
+                        break;
+                    case PlacementStates.AcceptablePlaced:
+                        endPointTransform.gameObject.SetActive(false);
+                        break;
+                }
+            }
+        }
+    }
 
     //-------------------------------------------------
     // Called when this GameObject becomes attached to the hand
