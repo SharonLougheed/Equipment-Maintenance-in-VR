@@ -2,12 +2,12 @@
   "source": "Unity",
   "applications": [
     {
-      "app_key": "application.generated.unity.equiptmentmaintenanceinvr.exe",
+      "app_key": "application.generated.unity.equipmentmaintenanceinvr.exe",
       "launch_type": "url",
       "url": "steam://launch/",
       "strings": {
         "en_us": {
-          "name": "Equiptment-Maintenance-in-VR [Testing]"
+          "name": "Equipment-Maintenance-in-VR [Testing]"
         }
       }
     }
