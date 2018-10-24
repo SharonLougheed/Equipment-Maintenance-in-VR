@@ -35,7 +35,7 @@ public class InteractablePart : MonoBehaviour {
     private bool otherBoundsExpired = true;
     private List<GameObject> endPointGameObjects;
     private Dictionary<int, Material[]> endPointOriginalMaterials;
-    private enum PlacementStates { Default, UnacceptableHover, AcceptableHover, AcceptablePlaced };
+    private enum PlacementStates { Default, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced };
     private PlacementStates currentPlacementState = PlacementStates.Default;
 
     void Awake()
@@ -248,6 +248,14 @@ public class InteractablePart : MonoBehaviour {
             hand.HoverLock(interactable);
             // Attach this object to the hand
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
+            //if(currentPlacementState == PlacementStates.AcceptablePlaced)
+            //{
+            //    UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+            //}
+            //else
+            //{
+            //    UpdatePlacementState(PlacementStates.Default);
+            //}
         }
         else if (isGrabEnding)
         {
@@ -263,7 +271,6 @@ public class InteractablePart : MonoBehaviour {
                 // Move to End point transform
                 transform.position = endPointTransform.position;
                 transform.rotation = endPointTransform.rotation;
-                endPointTransform.gameObject.SetActive(false);
                 UpdatePlacementState(PlacementStates.AcceptablePlaced);
                 OnAcceptablePlacement();
             }
@@ -280,10 +287,9 @@ public class InteractablePart : MonoBehaviour {
            if(IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
                 && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
             {
-                if (currentPlacementState != PlacementStates.AcceptableHover)
+                switch (currentPlacementState)
                 {
-                    if (snapAndDetach)
-                    {
+                    case PlacementStates.AcceptableHoverCanDetach:
                         // Detach this object from the hand
                         hand.DetachObject(gameObject);
                         // Call this to undo HoverLock
@@ -291,18 +297,24 @@ public class InteractablePart : MonoBehaviour {
                         // Move to End point transform
                         transform.position = endPointTransform.position;
                         transform.rotation = endPointTransform.rotation;
-
                         UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                    }
-                    else
-                    {
-                        UpdatePlacementState(PlacementStates.AcceptableHover);
-                    }
-                    OnAcceptablePlacement();
-                }
-                else
-                {
-                    endPointTransform.gameObject.SetActive(true);
+                        OnAcceptablePlacement();
+                        break;
+                    case PlacementStates.AcceptablePlaced:
+                        UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+                        break;
+                    case PlacementStates.UnacceptableHover:
+                        if (snapAndDetach)
+                        {
+                            UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
+                        }
+                        else
+                        {
+                            UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+                        }
+                        break;
+
+
                 }
             }
             else
@@ -317,10 +329,13 @@ public class InteractablePart : MonoBehaviour {
 
     private void UpdatePlacementState(PlacementStates newState)
     {
-        if(newState != currentPlacementState)
+        PlacementStates oldState = currentPlacementState;
+        currentPlacementState = newState;
+
+        if(currentPlacementState != oldState)
         {
             // Make changes on Interactable Part to reflect state change
-            switch (newState)
+            switch (currentPlacementState)
             {
                 case PlacementStates.Default:
                     rigidbody.isKinematic = false;
@@ -331,17 +346,21 @@ public class InteractablePart : MonoBehaviour {
                     rigidbody.useGravity = false;
                     break;
                 case PlacementStates.UnacceptableHover:
-                case PlacementStates.AcceptableHover:
+                case PlacementStates.AcceptableHoverCanDetach:
                     break;
             }
             // Make changes on End Point Part to reflect state change (only if its going to be visible)
             if (endPointTransform != null && showEndPointOutline)
             {
-                if(currentPlacementState == PlacementStates.AcceptablePlaced)
+                // change conditions coming out of specific states
+                switch (oldState)
                 {
-                    endPointTransform.gameObject.SetActive(true);
+                    case PlacementStates.AcceptablePlaced:
+                        endPointTransform.gameObject.SetActive(true);
+                        break;
                 }
-                switch (newState)
+                // change conditions going to specifc states
+                switch (currentPlacementState)
                 {
                     case PlacementStates.Default:
                         ApplyMaterialToList(endPointGameObjects, defaultOutlineMaterial);
@@ -349,7 +368,8 @@ public class InteractablePart : MonoBehaviour {
                     case PlacementStates.UnacceptableHover:
                         ApplyMaterialToList(endPointGameObjects, unacceptablePlacementMaterial);
                         break;
-                    case PlacementStates.AcceptableHover:
+                    case PlacementStates.AcceptableHoverCanDetach:
+                    case PlacementStates.AcceptableHoverNoDetach:
                         ApplyMaterialToList(endPointGameObjects, acceptablePlacementMaterial);
                         break;
                     case PlacementStates.AcceptablePlaced:
@@ -358,6 +378,7 @@ public class InteractablePart : MonoBehaviour {
                 }
             }
         }
+        Debug.Log("Placement State: " + currentPlacementState.ToString());
     }
 
     //-------------------------------------------------
