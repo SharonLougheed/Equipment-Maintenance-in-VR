@@ -37,6 +37,7 @@ public class InteractablePart : MonoBehaviour {
     private Dictionary<int, Material[]> endPointOriginalMaterials;
     private enum PlacementStates { Default, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced };
     private PlacementStates currentPlacementState = PlacementStates.Default;
+    private bool isTouchingEndPoint = false;
 
     void Awake()
     {
@@ -215,6 +216,14 @@ public class InteractablePart : MonoBehaviour {
         return b;
     }
 
+    private void SetAllTriggers(GameObject obj, bool isOn)
+    {
+        Collider[] colliders = obj.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].isTrigger = isOn;
+        }
+    }
 
     //-------------------------------------------------
     // Called when a Hand starts hovering over this object
@@ -335,18 +344,27 @@ public class InteractablePart : MonoBehaviour {
         if(currentPlacementState != oldState)
         {
             // Make changes on Interactable Part to reflect state change
+            switch (oldState)
+            {
+            
+            }
             switch (currentPlacementState)
             {
                 case PlacementStates.Default:
                     rigidbody.isKinematic = false;
                     rigidbody.useGravity = true;
+                    SetAllTriggers(gameObject, false);
                     break;
                 case PlacementStates.AcceptablePlaced:
                     rigidbody.isKinematic = true;
                     rigidbody.useGravity = false;
+                    SetAllTriggers(gameObject, false);
+                    SetAllTriggers(gameObject, false);
                     break;
                 case PlacementStates.UnacceptableHover:
                 case PlacementStates.AcceptableHoverCanDetach:
+                case PlacementStates.AcceptableHoverNoDetach:
+                    SetAllTriggers(gameObject, true);
                     break;
             }
             // Make changes on End Point Part to reflect state change (only if its going to be visible)
@@ -379,6 +397,19 @@ public class InteractablePart : MonoBehaviour {
             }
         }
         Debug.Log("Placement State: " + currentPlacementState.ToString());
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("OnTriggerEnter");
+
+    }
+
+
+    private void OnTriggerExit(Collider other)
+    {
+        Debug.Log("OnTriggerExit");
+
     }
 
     //-------------------------------------------------
