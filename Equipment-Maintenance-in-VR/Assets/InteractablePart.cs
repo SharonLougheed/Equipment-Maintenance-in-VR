@@ -64,7 +64,18 @@ public class InteractablePart : MonoBehaviour {
         {
             rigidbody = gameObject.AddComponent<Rigidbody>() as Rigidbody;
         }
+        SetStatic(gameObject, false);
         InitializeEndPoint();
+    }
+
+    
+    private void SetStatic(GameObject obj, bool isStatic)
+    {
+        List<GameObject> allObjects = GetAllGameObjectsAtOrBelow(obj);
+        for(int i = 0; i < allObjects.Count; i++)
+        {
+            allObjects[i].isStatic = isStatic;
+        }
     }
 
 
