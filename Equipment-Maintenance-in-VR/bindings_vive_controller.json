@@ -1,5 +1,5 @@
 {
-   "app_key" : "application.generated.unity.steamvr.exe",
+   "app_key" : "application.generated.unity.equipmentmaintenanceinvr.exe",
    "bindings" : {
       "/actions/buggy" : {
          "sources" : [

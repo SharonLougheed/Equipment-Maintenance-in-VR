@@ -35,8 +35,9 @@ public class InteractablePart : MonoBehaviour {
     private bool otherBoundsExpired = true;
     private List<GameObject> endPointGameObjects;
     private Dictionary<int, Material[]> endPointOriginalMaterials;
-    private enum PlacementStates { Default, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced };
-    private PlacementStates currentPlacementState = PlacementStates.Default;
+    private Dictionary<int, Collider> endPointColliders;
+    private enum PlacementStates { DefaultPlaced, DefaultHeld, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced, UnacceptablePlaced };
+    private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
 
     void Awake()
@@ -137,12 +138,14 @@ public class InteractablePart : MonoBehaviour {
             {
                 SetEndPointVisibility(false);
             }
+            endPointColliders = new Dictionary<int, Collider>();
             for (int i = 0; i < endPointGameObjects.Count; i++)
             {
                 Collider collider = endPointGameObjects[i].GetComponent<Collider>();
                 if (collider != null)
                 {
                     collider.isTrigger = true;
+                    endPointColliders.Add(collider.GetInstanceID(), collider);
                 }
             }
         }
@@ -287,20 +290,27 @@ public class InteractablePart : MonoBehaviour {
             hand.DetachObject(gameObject);
             // Call this to undo HoverLock
             hand.HoverUnlock(interactable);
-            // For snapping
-            if (endPointTransform != null
+            // First test if they are at least overlapping
+            if(isTouchingEndPoint)
+            {
+                if (endPointTransform != null
                 && IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
                 && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
-            {
-                // Move to End point transform
-                transform.position = endPointTransform.position;
-                transform.rotation = endPointTransform.rotation;
-                UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                OnAcceptablePlacement();
+                {
+                    // Move to End point transform
+                    transform.position = endPointTransform.position;
+                    transform.rotation = endPointTransform.rotation;
+                    UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                    OnAcceptablePlacement();
+                }
+                else
+                {
+                    UpdatePlacementState(PlacementStates.UnacceptablePlaced);
+                }
             }
             else
             {
-                UpdatePlacementState(PlacementStates.Default);
+                UpdatePlacementState(PlacementStates.DefaultPlaced);
             }
         }
 
@@ -308,44 +318,50 @@ public class InteractablePart : MonoBehaviour {
             && interactable.attachedToHand != null
             && !isGrabEnding)
         {
-           if(IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
-                && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
+            // First check if they are at least overlapping
+            if (isTouchingEndPoint || currentPlacementState == PlacementStates.UnacceptableHover)
             {
-                switch (currentPlacementState)
+                // Then if they are relatively close in position and rotation
+                if (IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
+                && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
                 {
-                    case PlacementStates.AcceptableHoverCanDetach:
-                        // Detach this object from the hand
-                        hand.DetachObject(gameObject);
-                        // Call this to undo HoverLock
-                        hand.HoverUnlock(interactable);
-                        // Move to End point transform
-                        transform.position = endPointTransform.position;
-                        transform.rotation = endPointTransform.rotation;
-                        UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                        OnAcceptablePlacement();
-                        break;
-                    case PlacementStates.AcceptablePlaced:
-                        UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                        break;
-                    case PlacementStates.UnacceptableHover:
-                        if (snapAndDetach)
-                        {
-                            UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
-                        }
-                        else
-                        {
+                    switch (currentPlacementState)
+                    {
+                        case PlacementStates.AcceptableHoverCanDetach:
+                            // Detach this object from the hand
+                            hand.DetachObject(gameObject);
+                            // Call this to undo HoverLock
+                            hand.HoverUnlock(interactable);
+                            // Move to End point transform
+                            transform.position = endPointTransform.position;
+                            transform.rotation = endPointTransform.rotation;
+                            UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                            OnAcceptablePlacement();
+                            break;
+                        case PlacementStates.AcceptablePlaced:
                             UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                        }
-                        break;
-
-
+                            break;
+                        case PlacementStates.UnacceptableHover:
+                            if (snapAndDetach)
+                            {
+                                UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
+                            }
+                            else
+                            {
+                                UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+                            }
+                            break;
+                    }
+                }
+                else
+                {
+                    UpdatePlacementState(PlacementStates.UnacceptableHover);
                 }
             }
             else
             {
-                UpdatePlacementState(PlacementStates.UnacceptableHover);
+                UpdatePlacementState(PlacementStates.DefaultHeld);
             }
-
         }
 
     }
@@ -359,23 +375,20 @@ public class InteractablePart : MonoBehaviour {
         if(currentPlacementState != oldState)
         {
             // Make changes on Interactable Part to reflect state change
-            switch (oldState)
-            {
-            
-            }
             switch (currentPlacementState)
             {
-                case PlacementStates.Default:
+                case PlacementStates.UnacceptablePlaced:
+                case PlacementStates.DefaultPlaced:
+                    SetAllTriggers(gameObject, false);
                     rigidbody.isKinematic = false;
                     rigidbody.useGravity = true;
-                    SetAllTriggers(gameObject, false);
                     break;
                 case PlacementStates.AcceptablePlaced:
                     rigidbody.isKinematic = true;
                     rigidbody.useGravity = false;
                     SetAllTriggers(gameObject, false);
-                    SetAllTriggers(gameObject, false);
                     break;
+                case PlacementStates.DefaultHeld:
                 case PlacementStates.UnacceptableHover:
                 case PlacementStates.AcceptableHoverCanDetach:
                 case PlacementStates.AcceptableHoverNoDetach:
@@ -395,10 +408,12 @@ public class InteractablePart : MonoBehaviour {
                 // change conditions going to specifc states
                 switch (currentPlacementState)
                 {
-                    case PlacementStates.Default:
+                    case PlacementStates.DefaultPlaced:
+                    case PlacementStates.DefaultHeld:
                         ApplyMaterialToList(endPointGameObjects, defaultOutlineMaterial);
                         break;
                     case PlacementStates.UnacceptableHover:
+                    case PlacementStates.UnacceptablePlaced:
                         ApplyMaterialToList(endPointGameObjects, unacceptablePlacementMaterial);
                         break;
                     case PlacementStates.AcceptableHoverCanDetach:
@@ -411,20 +426,36 @@ public class InteractablePart : MonoBehaviour {
                 }
             }
         }
-        Debug.Log("Placement State: " + currentPlacementState.ToString());
+        //Debug.Log("Placement State: " + currentPlacementState.ToString());
     }
 
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log("OnTriggerEnter");
-
+        if( showEndPointOutline
+            && other != null
+            && endPointTransform != null
+            && endPointColliders.ContainsKey(other.GetInstanceID()))
+        {
+            isTouchingEndPoint = true;
+        }
+        else
+        {
+            Debug.Log("Wrong collider: " + other.gameObject.name);
+        }           
     }
 
 
     private void OnTriggerExit(Collider other)
     {
         Debug.Log("OnTriggerExit");
-
+        if (showEndPointOutline
+           && other != null
+           && endPointTransform != null
+           && endPointColliders.ContainsKey(other.GetInstanceID()))
+        {
+            isTouchingEndPoint = false;
+        }
     }
 
     //-------------------------------------------------
