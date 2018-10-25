@@ -60,6 +60,10 @@ public class InteractablePart : MonoBehaviour {
         interactable = GetComponent<Interactable>();
         transform = GetComponent<Transform>();
         rigidbody = GetComponent<Rigidbody>();
+        if(rigidbody == null)
+        {
+            rigidbody = gameObject.AddComponent<Rigidbody>() as Rigidbody;
+        }
         InitializeEndPoint();
     }
 
