@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Valve.VR;
 
 public class GarageDoor : MonoBehaviour {
 	public Transform	MessageUI;
 
-	Animation doorAnim;
+    //private SteamVR_TrackedController device;
+
+    Animation doorAnim;
 	bool opened=false; 
 	bool allowOpen;
 
@@ -17,6 +20,7 @@ public class GarageDoor : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (allowOpen && !opened) {
+            // TODO
 			if (Input.GetKeyDown(KeyCode.E)) {
 				opened=true;
 				MessageUI.gameObject.SetActive(false);
