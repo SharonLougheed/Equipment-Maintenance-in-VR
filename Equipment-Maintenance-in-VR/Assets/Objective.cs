@@ -8,6 +8,7 @@ public class Objective : MonoBehaviour {
 
     public string title;
     public string description;
+    public enum ObjectiveTypes {MoveToLocation, MoveFromLocation, None};
     [Tooltip("Select the GameObject that is the subject of this objective")]
     public GameObject interactableObject;
     [Tooltip("Actions applied before this objective is completed")]
