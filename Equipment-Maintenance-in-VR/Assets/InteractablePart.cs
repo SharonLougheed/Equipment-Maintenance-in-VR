@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -24,6 +25,7 @@ public class InteractablePart : MonoBehaviour {
     public Material acceptablePlacementMaterial;
     [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
     public Material unacceptablePlacementMaterial;
+    public event Action CompletionEvent;
 
     private Transform transform;
     private Rigidbody rigidbody;
@@ -67,6 +69,7 @@ public class InteractablePart : MonoBehaviour {
         }
         SetStatic(gameObject, false);
         InitializeEndPoint();
+        OnAcceptablePlacement();
     }
 
     
@@ -164,6 +167,10 @@ public class InteractablePart : MonoBehaviour {
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
+        if(CompletionEvent != null)
+        {
+            CompletionEvent();
+        }
     }
 
 
