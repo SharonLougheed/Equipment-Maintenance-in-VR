@@ -16,13 +16,13 @@ public class Objective : MonoBehaviour {
     public UnityEvent PostConditions;
 
     private InteractablePart part;
-    private Objective[] childObjectives;
+    private List<Objective> childObjectives;
     private int currentObjectiveIndex = 0;
     private event Action CompletionEvent;
 
     void Awake()
     {
-        childObjectives = GetComponentsInChildren<Objective>();
+        childObjectives = GetChildObjectives();
         if(interactableObject != null)
             part = interactableObject.GetComponent<InteractablePart>();
     }
@@ -30,39 +30,40 @@ public class Objective : MonoBehaviour {
 
     void Start () {
         Objective[] parentObjectives = GetComponentsInParent<Objective>();
-        if(parentObjectives != null && parentObjectives.Length > 1)
-        {
-            Debug.Log("I am a child objective! Said " + title);
-        }
-        else
-        {
-            Debug.Log("Starting objective: " + title);
-            StartNextObjective();
-        }
-        //Debug.Log("I have " + (childObjectives.Length - 1) + " real children");
+
+        if (parentObjectives != null && parentObjectives.Length > 1)
+            return;
+        // Must be parent objective
+        StartNextObjective();
 	}
 	
-
+    private List<Objective> GetChildObjectives()
+    {
+        List<Objective> objectives = new List<Objective>();
+        foreach(var child in GetComponentsInChildren<Objective>())
+        {
+            if(child.gameObject != gameObject && child.gameObject != gameObject.transform.parent)
+            {
+                objectives.Add(child);
+                Debug.Log("Child: " + child.title);
+            }
+        }
+        return objectives;
+    }
     public void StartNextObjective()
     {
         /* Go through each child objective, only move to the next one when the current one is complete
          * Else there are no child objective left to complete so start this objective
          */
-
-        if (childObjectives.Length > 1 && currentObjectiveIndex < childObjectives.Length)
+        // TODO change child selection logic
+        if (childObjectives.Count > 0 && currentObjectiveIndex < childObjectives.Count)
         {
-            while (childObjectives[currentObjectiveIndex].gameObject == gameObject
-                || childObjectives[currentObjectiveIndex].gameObject == gameObject.transform.parent)
-                currentObjectiveIndex++;
-
-            Debug.Log("");
-            Debug.Log("Starting child " + childObjectives[currentObjectiveIndex].title + " objective  of " + title);
-            childObjectives[currentObjectiveIndex].StartNextObjective();
             childObjectives[currentObjectiveIndex].CompletionEvent += OnChildObjectiveCompleted;
+            childObjectives[currentObjectiveIndex].StartNextObjective();
         }
         else // This scripts objective
         {
-            if(interactableObject != null && part != null)
+            if (interactableObject != null && part != null)
             {
                 ApplyPreConditions();
                 Debug.Log(title + " objective started!");
@@ -75,7 +76,7 @@ public class Objective : MonoBehaviour {
                 Debug.Log(title + " objective started! (no object)");
                 OnObjectiveCompleted();
             }
-           
+
         }
     }
 
