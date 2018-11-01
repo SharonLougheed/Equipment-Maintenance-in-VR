@@ -12,6 +12,7 @@ public class InteractablePart : MonoBehaviour {
     private Hand.AttachmentFlags attachmentFlags = Hand.defaultAttachmentFlags & (~Hand.AttachmentFlags.SnapOnAttach) & (~Hand.AttachmentFlags.DetachOthers) & (~Hand.AttachmentFlags.VelocityMovement);
     private Interactable interactable;
 
+    public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
     public Transform endPointTransform;
     public bool showEndPointOutline = true;
     public float acceptableDegreesFromEndPoint = 10f;
@@ -25,7 +26,7 @@ public class InteractablePart : MonoBehaviour {
     [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
     public Material unacceptablePlacementMaterial;
     public event Action CompletionEvent;
-    public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
+
 
     private Transform transform;
     private Rigidbody rigidbody;
@@ -328,6 +329,7 @@ public class InteractablePart : MonoBehaviour {
                 // For now dropping it anywhere implies a successful movement away from a location
                 OnAcceptablePlacement();
                 UpdatePlacementState(PlacementStates.DefaultPlaced);
+                Debug.Log("placing down");  
             }
             
         }
