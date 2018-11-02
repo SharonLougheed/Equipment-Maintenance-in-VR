@@ -152,6 +152,7 @@ public class InteractablePart : MonoBehaviour {
                     endPointColliders.Add(collider.GetInstanceID(), collider);
                 }
             }
+            endPointTransform.gameObject.SetActive(false);
         }
     }
 

@@ -370,7 +370,7 @@ public class ModifiedThrowable : MonoBehaviour
         {
             // Call this to continue receiving HandHoverUpdate messages,
             // and prevent the hand from hovering over anything else
-            hand.HoverLock(interactable);
+            //hand.HoverLock(interactable);
             // Attach this object to the hand
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
             hand.HideGrabHint();
