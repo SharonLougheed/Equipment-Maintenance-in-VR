@@ -10,22 +10,27 @@ public class Objective : MonoBehaviour {
     public string description;
     public enum ObjectiveTypes {MoveToLocation, MoveFromLocation, None};
     [Tooltip("Select the GameObject that is the subject of this objective")]
-    public GameObject interactableObject;
-    [Tooltip("Actions applied before this objective is completed")]
+    public GameObject subjectGameObject;
+    [Tooltip("Actions applied as the objective starts")]
     public UnityEvent PreConditions;
     [Tooltip("Actions applied after this objective is completed")]
     public UnityEvent PostConditions;
 
+    private bool isParentObjective;
     private InteractablePart part;
     private List<Objective> childObjectives;
     private int currentObjectiveIndex = 0;
     private event Action CompletionEvent;
+    private ObjectiveSubject objectiveSubject;
 
     void Awake()
     {
         childObjectives = GetChildObjectives();
-        if(interactableObject != null)
-            part = interactableObject.GetComponent<InteractablePart>();
+        if(subjectGameObject != null)
+        {
+            objectiveSubject = subjectGameObject.AddComponent<ObjectiveSubject>();
+            part = subjectGameObject.GetComponent<InteractablePart>();
+        }
     }
 
 
@@ -33,9 +38,16 @@ public class Objective : MonoBehaviour {
         Objective[] parentObjectives = GetComponentsInParent<Objective>();
 
         if (parentObjectives != null && parentObjectives.Length > 1)
+        {
+            isParentObjective = false;
             return;
-        // Must be parent objective
-        StartNextObjective();
+        }
+        else
+        {
+            //Must be parent objective
+            isParentObjective = true;
+            StartNextObjective();
+        }
 	}
 	
     private List<Objective> GetChildObjectives()
@@ -46,7 +58,6 @@ public class Objective : MonoBehaviour {
             if(child.gameObject != gameObject && child.gameObject != gameObject.transform.parent)
             {
                 objectives.Add(child);
-                Debug.Log("Child: " + child.title);
             }
         }
         return objectives;
@@ -64,17 +75,15 @@ public class Objective : MonoBehaviour {
         }
         else // This scripts objective
         {
-            if (interactableObject != null && part != null)
+            ApplyPreConditions();
+            if (objectiveSubject != null)
             {
-                ApplyPreConditions();
                 Debug.Log(title + " objective started!");
-                part.CompletionEvent += OnObjectiveCompleted;
+                objectiveSubject.CompletionEvent += OnObjectiveCompleted;
             }
             else
             {
-                //Debug.Log("Error. Objective subject is null");
-                // FOR TESTING
-                Debug.Log(title + " objective started! (no object)");
+                Debug.Log("Error: Objective \"" + title + "\" ObjectiveSubject is null. Completing immediately");
                 OnObjectiveCompleted();
             }
 
@@ -92,8 +101,8 @@ public class Objective : MonoBehaviour {
 
     private void OnObjectiveCompleted()
     {
-        if(part != null)
-            part.CompletionEvent -= OnObjectiveCompleted;
+        if(objectiveSubject != null)
+            objectiveSubject.CompletionEvent -= OnObjectiveCompleted;
         ApplyPostConditions();
         if(CompletionEvent != null)
             CompletionEvent();
@@ -102,13 +111,14 @@ public class Objective : MonoBehaviour {
 
     private void ApplyPreConditions()
     {
+        //Debug.Log(title + " Applying pre-conditions");
         PreConditions.Invoke();
     }
 
 
     private void ApplyPostConditions()
     {
-        Debug.Log(title + " objective completed!");
+        //Debug.Log(title + " Applying post-conditions");
         PostConditions.Invoke();
     }
 

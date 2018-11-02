@@ -25,9 +25,8 @@ public class InteractablePart : MonoBehaviour {
     public Material acceptablePlacementMaterial;
     [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
     public Material unacceptablePlacementMaterial;
-    public event Action CompletionEvent;
 
-
+    private ObjectiveSubject objectiveSubject;
     private Transform transform;
     private Rigidbody rigidbody;
     private Bounds selfGroupBounds;
@@ -64,13 +63,14 @@ public class InteractablePart : MonoBehaviour {
         interactable = GetComponent<Interactable>();
         transform = GetComponent<Transform>();
         rigidbody = GetComponent<Rigidbody>();
+        ObjectiveSubject objectiveSubject = GetComponent<ObjectiveSubject>();
+        
         if(rigidbody == null)
         {
             rigidbody = gameObject.AddComponent<Rigidbody>() as Rigidbody;
         }
         SetStatic(gameObject, false);
         InitializeEndPoint();
-        OnAcceptablePlacement();
     }
 
     
@@ -168,9 +168,14 @@ public class InteractablePart : MonoBehaviour {
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
-        if(CompletionEvent != null)
+        // if an objective recently added it
+        if(objectiveSubject == null)
         {
-            CompletionEvent();
+            objectiveSubject = GetComponent<ObjectiveSubject>();
+        }
+        if(objectiveSubject != null)
+        {
+            objectiveSubject.NotifyCompletion();
         }
     }
 
