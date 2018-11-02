@@ -1,17 +1,18 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections;
+using System.Collections.Generic;
+using Valve.VR;
 using Valve.VR.InteractionSystem;
 
+//-------------------------------------------------------------------------
 [RequireComponent(typeof(Interactable))]
-public class InteractablePart : MonoBehaviour {
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(VelocityEstimator))]
 
-    // Interactable related
-    private Hand.AttachmentFlags attachmentFlags = Hand.defaultAttachmentFlags & (~Hand.AttachmentFlags.SnapOnAttach) & (~Hand.AttachmentFlags.DetachOthers) & (~Hand.AttachmentFlags.VelocityMovement);
-    private Interactable interactable;
-
+public class ModifiedThrowable : MonoBehaviour
+{
     public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
     public Transform endPointTransform;
     public bool showEndPointOutline = true;
@@ -42,7 +43,50 @@ public class InteractablePart : MonoBehaviour {
     private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
 
-    void Awake()
+    [EnumFlags]
+    [Tooltip("The flags used to attach this object to the hand.")]
+    public Hand.AttachmentFlags attachmentFlags = Hand.AttachmentFlags.ParentToHand | Hand.AttachmentFlags.DetachFromOtherHand | Hand.AttachmentFlags.TurnOnKinematic;
+
+    [Tooltip("The local point which acts as a positional and rotational offset to use while held")]
+    public Transform attachmentOffset;
+
+    [Tooltip("How fast must this object be moving to attach due to a trigger hold instead of a trigger press? (-1 to disable)")]
+    public float catchingSpeedThreshold = -1;
+
+    public ReleaseStyle releaseVelocityStyle = ReleaseStyle.GetFromHand;
+
+    [Tooltip("The time offset used when releasing the object with the RawFromHand option")]
+    public float releaseVelocityTimeOffset = -0.011f;
+
+    public float scaleReleaseVelocity = 1.1f;
+
+    [Tooltip("When detaching the object, should it return to its original parent?")]
+    public bool restoreOriginalParent = false;
+
+    public bool attachEaseIn = false;
+    public AnimationCurve snapAttachEaseInCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+    public float snapAttachEaseInTime = 0.15f;
+
+    protected VelocityEstimator velocityEstimator;
+    protected bool attached = false;
+    protected float attachTime;
+    protected Vector3 attachPosition;
+    protected Quaternion attachRotation;
+    protected Transform attachEaseInTransform;
+
+    public UnityEvent onPickUp;
+    public UnityEvent onDetachFromHand;
+
+    public bool snapAttachEaseInCompleted = false;
+
+    protected RigidbodyInterpolation hadInterpolation = RigidbodyInterpolation.None;
+
+    [HideInInspector]
+    public Interactable interactable;
+
+
+    //-------------------------------------------------
+    protected virtual void Awake()
     {
         if (defaultOutlineMaterial == null)
         {
@@ -56,16 +100,35 @@ public class InteractablePart : MonoBehaviour {
         {
             unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
         }
+
+        velocityEstimator = GetComponent<VelocityEstimator>();
+        interactable = GetComponent<Interactable>();
+
+        if (attachEaseIn)
+        {
+            attachmentFlags &= ~Hand.AttachmentFlags.SnapOnAttach;
+        }
+
+        rigidbody = GetComponent<Rigidbody>();
+        rigidbody.maxAngularVelocity = 50.0f;
+
+
+        if (attachmentOffset != null)
+        {
+            interactable.handFollowTransform = attachmentOffset;
+        }
+
     }
 
 
-    void Start () {
+    void Start()
+    {
         interactable = GetComponent<Interactable>();
         transform = GetComponent<Transform>();
         rigidbody = GetComponent<Rigidbody>();
         ObjectiveSubject objectiveSubject = GetComponent<ObjectiveSubject>();
-        
-        if(rigidbody == null)
+
+        if (rigidbody == null)
         {
             rigidbody = gameObject.AddComponent<Rigidbody>() as Rigidbody;
         }
@@ -73,11 +136,11 @@ public class InteractablePart : MonoBehaviour {
         InitializeEndPoint();
     }
 
-    
+
     private void SetStatic(GameObject obj, bool isStatic)
     {
         List<GameObject> allObjects = GetAllGameObjectsAtOrBelow(obj);
-        for(int i = 0; i < allObjects.Count; i++)
+        for (int i = 0; i < allObjects.Count; i++)
         {
             allObjects[i].isStatic = isStatic;
         }
@@ -106,7 +169,7 @@ public class InteractablePart : MonoBehaviour {
         return gameObjects;
     }
 
-   
+
     private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
     {
         for (int i = 0; i < gameObjects.Count; i++)
@@ -130,7 +193,7 @@ public class InteractablePart : MonoBehaviour {
 
     private void InitializeEndPoint()
     {
-        if(endPointTransform != null)
+        if (endPointTransform != null)
         {
             endPointGameObjects = GetAllGameObjectsAtOrBelow(endPointTransform.gameObject);
             endPointOriginalMaterials = SaveOriginalMaterials(endPointGameObjects);
@@ -152,7 +215,6 @@ public class InteractablePart : MonoBehaviour {
                     endPointColliders.Add(collider.GetInstanceID(), collider);
                 }
             }
-            endPointTransform.gameObject.SetActive(false);
         }
     }
 
@@ -170,11 +232,11 @@ public class InteractablePart : MonoBehaviour {
     {
         onAcceptablePlacement.Invoke();
         // if an objective recently added it
-        if(objectiveSubject == null)
+        if (objectiveSubject == null)
         {
             objectiveSubject = GetComponent<ObjectiveSubject>();
         }
-        if(objectiveSubject != null)
+        if (objectiveSubject != null)
         {
             objectiveSubject.NotifyCompletion();
         }
@@ -244,7 +306,7 @@ public class InteractablePart : MonoBehaviour {
                 else
                     b.Encapsulate(c.bounds);
             }
-        } 
+        }
         return b;
     }
 
@@ -257,27 +319,49 @@ public class InteractablePart : MonoBehaviour {
         }
     }
 
+
     //-------------------------------------------------
-    // Called when a Hand starts hovering over this object
-    //-------------------------------------------------
-    private void OnHandHoverBegin(Hand hand)
+    protected virtual void OnHandHoverBegin(Hand hand)
     {
+
         VibrateController(hand, 0.15f, 5f, 1f);
+        bool showHint = false;
+
+        // "Catch" the throwable by holding down the interaction button instead of pressing it.
+        // Only do this if the throwable is moving faster than the prescribed threshold speed,
+        // and if it isn't attached to another hand
+        if (!attached && catchingSpeedThreshold != -1)
+        {
+            float catchingThreshold = catchingSpeedThreshold * SteamVR_Utils.GetLossyScale(Player.instance.trackingOriginTransform);
+
+            GrabTypes bestGrabType = hand.GetBestGrabbingType();
+
+            if (bestGrabType != GrabTypes.None)
+            {
+                if (rigidbody.velocity.magnitude >= catchingThreshold)
+                {
+                    hand.AttachObject(gameObject, bestGrabType, attachmentFlags);
+                    showHint = false;
+                }
+            }
+        }
+
+        if (showHint)
+        {
+            hand.ShowGrabHint();
+        }
     }
 
 
     //-------------------------------------------------
-    // Called when a Hand stops hovering over this object
-    //-------------------------------------------------
-    private void OnHandHoverEnd(Hand hand)
+    protected virtual void OnHandHoverEnd(Hand hand)
     {
+        hand.HideGrabHint();
     }
 
 
     //-------------------------------------------------
-    // Called every Update() while a Hand is hovering over this object
-    //-------------------------------------------------
-    private void HandHoverUpdate(Hand hand)
+    protected virtual void HandHoverUpdate(Hand hand)
     {
         GrabTypes startingGrabType = hand.GetGrabStarting();
         bool isGrabEnding = hand.IsGrabEnding(this.gameObject);
@@ -286,127 +370,36 @@ public class InteractablePart : MonoBehaviour {
         {
             // Call this to continue receiving HandHoverUpdate messages,
             // and prevent the hand from hovering over anything else
-            hand.HoverLock(interactable);
+            //hand.HoverLock(interactable);
             // Attach this object to the hand
             hand.AttachObject(gameObject, startingGrabType, attachmentFlags);
-
+            hand.HideGrabHint();
             if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
             {
                 // Do nothing
-            }
-            else if(ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
-            {
-                UpdatePlacementState(PlacementStates.DefaultHeld);
-            }
-
-        }
-        else if (isGrabEnding)
-        {
-            // Detach this object from the hand
-            hand.DetachObject(gameObject);
-            // Call this to undo HoverLock
-            hand.HoverUnlock(interactable);
-            if(ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
-            {
-                // First test if they are at least overlapping
-                if (isTouchingEndPoint)
-                {
-                    if (endPointTransform != null
-                    && IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
-                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
-                    {
-                        // Move to End point transform
-                        transform.position = endPointTransform.position;
-                        transform.rotation = endPointTransform.rotation;
-                        UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                        OnAcceptablePlacement();
-                    }
-                    else
-                    {
-                        UpdatePlacementState(PlacementStates.UnacceptablePlaced);
-                    }
-                }
-                else
-                {
-                    UpdatePlacementState(PlacementStates.DefaultPlaced);
-                }
-            }else if(ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
-            {
-                // For now dropping it anywhere implies a successful movement away from a location
-                OnAcceptablePlacement();
-                UpdatePlacementState(PlacementStates.DefaultPlaced);
-                Debug.Log("placing down");  
-            }
-            
-        }
-
-        if (endPointTransform != null
-            && interactable.attachedToHand != null
-            && !isGrabEnding)
-        {
-            if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
-            {
-                // First check if they are at least overlapping
-                if (isTouchingEndPoint)
-                {
-                    // Then if they are relatively close in position and rotation
-                    if (IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
-                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
-                    {
-                        switch (currentPlacementState)
-                        {
-                            case PlacementStates.AcceptableHoverCanDetach:
-                                // Detach this object from the hand
-                                hand.DetachObject(gameObject);
-                                // Call this to undo HoverLock
-                                hand.HoverUnlock(interactable);
-                                // Move to End point transform
-                                transform.position = endPointTransform.position;
-                                transform.rotation = endPointTransform.rotation;
-                                UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                                OnAcceptablePlacement();
-                                break;
-                            case PlacementStates.AcceptablePlaced:
-                                UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                                break;
-                            case PlacementStates.UnacceptableHover:
-                                if (snapAndDetach)
-                                {
-                                    UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
-                                }
-                                else
-                                {
-                                    UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                                }
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        UpdatePlacementState(PlacementStates.UnacceptableHover);
-                    }
-                }
-                else
-                {
-                    UpdatePlacementState(PlacementStates.DefaultHeld);
-                }
             }
             else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
             {
-                // Do nothing
+                UpdatePlacementState(PlacementStates.DefaultHeld);
             }
-            
         }
+        
 
+        //GrabTypes startingGrabType = hand.GetGrabStarting();
+
+        //if (startingGrabType != GrabTypes.None)
+        //{
+        //    hand.AttachObject(gameObject, startingGrabType, attachmentFlags, attachmentOffset);
+        //    hand.HideGrabHint();
+        //}
     }
-
 
     private void UpdatePlacementState(PlacementStates newState)
     {
         PlacementStates oldState = currentPlacementState;
         currentPlacementState = newState;
 
-        if(currentPlacementState != oldState)
+        if (currentPlacementState != oldState)
         {
             // Make changes on Interactable Part to reflect state change
             switch (currentPlacementState)
@@ -466,7 +459,7 @@ public class InteractablePart : MonoBehaviour {
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log("OnTriggerEnter");
-        if( showEndPointOutline
+        if (showEndPointOutline
             && other != null
             && endPointTransform != null
             && endPointColliders.ContainsKey(other.GetInstanceID()))
@@ -476,7 +469,7 @@ public class InteractablePart : MonoBehaviour {
         else
         {
             Debug.Log("Wrong collider: " + other.gameObject.name);
-        }           
+        }
     }
 
 
@@ -493,41 +486,246 @@ public class InteractablePart : MonoBehaviour {
     }
 
     //-------------------------------------------------
-    // Called when this GameObject becomes attached to the hand
-    //-------------------------------------------------
-    private void OnAttachedToHand(Hand hand)
+    protected virtual void OnAttachedToHand(Hand hand)
     {
+        //Debug.Log("Pickup: " + hand.GetGrabStarting().ToString());
+
+        hadInterpolation = this.rigidbody.interpolation;
+
+        attached = true;
+
+        onPickUp.Invoke();
+
+        hand.HoverLock(null);
+
+        rigidbody.interpolation = RigidbodyInterpolation.None;
+
+        velocityEstimator.BeginEstimatingVelocity();
+
+        attachTime = Time.time;
+        attachPosition = transform.position;
+        attachRotation = transform.rotation;
+
+        if (attachEaseIn)
+        {
+            attachEaseInTransform = hand.objectAttachmentPoint;
+        }
+
+        snapAttachEaseInCompleted = false;
     }
 
 
     //-------------------------------------------------
-    // Called when this GameObject is detached from the hand
-    //-------------------------------------------------
-    private void OnDetachedFromHand(Hand hand)
+    protected virtual void OnDetachedFromHand(Hand hand)
     {
+        attached = false;
+
+        onDetachFromHand.Invoke();
+
+        hand.HoverUnlock(null);
+
+        rigidbody.interpolation = hadInterpolation;
+
+        if(currentPlacementState != PlacementStates.AcceptablePlaced)
+        {
+            Vector3 velocity;
+            Vector3 angularVelocity;
+
+            GetReleaseVelocities(hand, out velocity, out angularVelocity);
+
+            rigidbody.velocity = velocity;
+            rigidbody.angularVelocity = angularVelocity;
+        }
+    }
+
+
+    public virtual void GetReleaseVelocities(Hand hand, out Vector3 velocity, out Vector3 angularVelocity)
+    {
+        switch (releaseVelocityStyle)
+        {
+            case ReleaseStyle.ShortEstimation:
+                velocityEstimator.FinishEstimatingVelocity();
+                velocity = velocityEstimator.GetVelocityEstimate();
+                angularVelocity = velocityEstimator.GetAngularVelocityEstimate();
+                break;
+            case ReleaseStyle.AdvancedEstimation:
+                hand.GetEstimatedPeakVelocities(out velocity, out angularVelocity);
+                break;
+            case ReleaseStyle.GetFromHand:
+                velocity = hand.GetTrackedObjectVelocity(releaseVelocityTimeOffset);
+                angularVelocity = hand.GetTrackedObjectAngularVelocity(releaseVelocityTimeOffset);
+                break;
+            default:
+            case ReleaseStyle.NoChange:
+                velocity = rigidbody.velocity;
+                angularVelocity = rigidbody.angularVelocity;
+                break;
+        }
+
+        if (releaseVelocityStyle != ReleaseStyle.NoChange)
+            velocity *= scaleReleaseVelocity;
+    }
+
+    //-------------------------------------------------
+    protected virtual void HandAttachedUpdate(Hand hand)
+    {
+        if (attachEaseIn)
+        {
+            float t = Util.RemapNumberClamped(Time.time, attachTime, attachTime + snapAttachEaseInTime, 0.0f, 1.0f);
+            if (t < 1.0f)
+            {
+                t = snapAttachEaseInCurve.Evaluate(t);
+                transform.position = Vector3.Lerp(attachPosition, attachEaseInTransform.position, t);
+                transform.rotation = Quaternion.Lerp(attachRotation, attachEaseInTransform.rotation, t);
+            }
+            else if (!snapAttachEaseInCompleted)
+            {
+                gameObject.SendMessage("OnThrowableAttachEaseInCompleted", hand, SendMessageOptions.DontRequireReceiver);
+                snapAttachEaseInCompleted = true;
+            }
+        }
+        if (hand.IsGrabEnding(this.gameObject))
+        {
+            // Detach this object from the hand
+            hand.DetachObject(gameObject, restoreOriginalParent);
+            // Call this to undo HoverLock
+            //hand.HoverUnlock(interactable);
+            if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
+            {
+                // First test if they are at least overlapping
+                if (isTouchingEndPoint)
+                {
+                    if (endPointTransform != null
+                    && IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
+                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
+                    {
+                        // Move to End point transform
+                        transform.position = endPointTransform.position;
+                        transform.rotation = endPointTransform.rotation;
+                        UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                        OnAcceptablePlacement();
+                    }
+                    else
+                    {
+                        UpdatePlacementState(PlacementStates.UnacceptablePlaced);
+                    }
+                }
+                else
+                {
+                    UpdatePlacementState(PlacementStates.DefaultPlaced);
+                }
+            }
+            else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
+            {
+                // For now dropping it anywhere implies a successful movement away from a location
+                OnAcceptablePlacement();
+                UpdatePlacementState(PlacementStates.DefaultPlaced);
+                Debug.Log("placing down");
+            }
+
+        }
+
+        if (endPointTransform != null
+            && interactable.attachedToHand != null
+            )
+        {
+            if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
+            {
+                // First check if they are at least overlapping
+                if (isTouchingEndPoint)
+                {
+                    // Then if they are relatively close in position and rotation
+                    if (IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
+                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
+                    {
+                        switch (currentPlacementState)
+                        {
+                            case PlacementStates.AcceptableHoverCanDetach:
+                                // Detach this object from the hand
+                                hand.DetachObject(gameObject, restoreOriginalParent);
+                                // Call this to undo HoverLock
+                                //hand.HoverUnlock(interactable);
+                                // Move to End point transform
+                                transform.position = endPointTransform.position;
+                                transform.rotation = endPointTransform.rotation;
+                                UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                                OnAcceptablePlacement();
+                                break;
+                            case PlacementStates.AcceptablePlaced:
+                                UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+                                break;
+                            case PlacementStates.UnacceptableHover:
+                                if (snapAndDetach)
+                                {
+                                    UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
+                                }
+                                else
+                                {
+                                    UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+                                }
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        UpdatePlacementState(PlacementStates.UnacceptableHover);
+                    }
+                }
+                else
+                {
+                    UpdatePlacementState(PlacementStates.DefaultHeld);
+                }
+            }
+            else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
+            {
+                // Do nothing
+            }
+
+        }
+        //if (hand.IsGrabEnding(this.gameObject))
+        //{
+        //    hand.DetachObject(gameObject, restoreOriginalParent);
+
+        //    // Uncomment to detach ourselves late in the frame.
+        //    // This is so that any vehicles the player is attached to
+        //    // have a chance to finish updating themselves.
+        //    // If we detach now, our position could be behind what it
+        //    // will be at the end of the frame, and the object may appear
+        //    // to teleport behind the hand when the player releases it.
+        //    //StartCoroutine( LateDetach( hand ) );
+        //}
     }
 
 
     //-------------------------------------------------
-    // Called every Update() while this GameObject is attached to the hand
-    //-------------------------------------------------
-    private void HandAttachedUpdate(Hand hand)
+    protected virtual IEnumerator LateDetach(Hand hand)
     {
+        yield return new WaitForEndOfFrame();
+
+        hand.DetachObject(gameObject, restoreOriginalParent);
     }
 
 
     //-------------------------------------------------
-    // Called when this attached GameObject becomes the primary attached object
-    //-------------------------------------------------
-    private void OnHandFocusAcquired(Hand hand)
+    protected virtual void OnHandFocusAcquired(Hand hand)
     {
+        gameObject.SetActive(true);
+        velocityEstimator.BeginEstimatingVelocity();
     }
 
 
     //-------------------------------------------------
-    // Called when another attached GameObject becomes the primary attached object
-    //-------------------------------------------------
-    private void OnHandFocusLost(Hand hand)
+    protected virtual void OnHandFocusLost(Hand hand)
     {
+        gameObject.SetActive(false);
+        velocityEstimator.FinishEstimatingVelocity();
     }
+}
+
+public enum ReleaseStyle
+{
+    NoChange,
+    GetFromHand,
+    ShortEstimation,
+    AdvancedEstimation,
 }
