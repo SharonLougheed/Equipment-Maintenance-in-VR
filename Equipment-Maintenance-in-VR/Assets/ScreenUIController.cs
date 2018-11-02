@@ -40,7 +40,8 @@ public class ScreenUIController : MonoBehaviour {
     {
 		if (using3DText)
 		{
-			text3D.text = text;
+            text3D.transform.rotation = originalRotationOf3DText;
+            text3D.text = text;
 			text3D.transform.position = trackingObject.transform.position + trackingObject.transform.forward * textDist + trackingObject.transform.up * -(verticalDist) + trackingObject.transform.right * horizontalDist;
             text3D.transform.Rotate(0, trackingObject.transform.rotation.eulerAngles.y, 0);
 		}
