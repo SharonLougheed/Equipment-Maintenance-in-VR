@@ -526,13 +526,16 @@ public class ModifiedThrowable : MonoBehaviour
 
         rigidbody.interpolation = hadInterpolation;
 
-        Vector3 velocity;
-        Vector3 angularVelocity;
+        if(currentPlacementState != PlacementStates.AcceptablePlaced)
+        {
+            Vector3 velocity;
+            Vector3 angularVelocity;
 
-        GetReleaseVelocities(hand, out velocity, out angularVelocity);
+            GetReleaseVelocities(hand, out velocity, out angularVelocity);
 
-        rigidbody.velocity = velocity;
-        rigidbody.angularVelocity = angularVelocity;
+            rigidbody.velocity = velocity;
+            rigidbody.angularVelocity = angularVelocity;
+        }
     }
 
 
