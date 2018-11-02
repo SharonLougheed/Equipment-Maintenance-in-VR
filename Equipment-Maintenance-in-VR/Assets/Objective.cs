@@ -9,6 +9,7 @@ public class Objective : MonoBehaviour {
     public string title;
     public string description;
     public enum ObjectiveTypes {MoveToLocation, MoveFromLocation, None};
+    public enum ObjectiveStates { InProgress, NotInProgress };
     [Tooltip("Select the GameObject that is the subject of this objective")]
     public GameObject subjectGameObject;
     [Tooltip("Actions applied as the objective starts")]
@@ -67,7 +68,6 @@ public class Objective : MonoBehaviour {
         /* Go through each child objective, only move to the next one when the current one is complete
          * Else there are no child objective left to complete so start this objective
          */
-        // TODO change child selection logic
         if (childObjectives.Count > 0 && currentObjectiveIndex < childObjectives.Count)
         {
             childObjectives[currentObjectiveIndex].CompletionEvent += OnChildObjectiveCompleted;
@@ -79,6 +79,7 @@ public class Objective : MonoBehaviour {
             if (objectiveSubject != null)
             {
                 Debug.Log(title + " objective started!");
+                objectiveSubject.objectiveState = ObjectiveStates.InProgress;
                 objectiveSubject.CompletionEvent += OnObjectiveCompleted;
             }
             else
@@ -102,7 +103,10 @@ public class Objective : MonoBehaviour {
     private void OnObjectiveCompleted()
     {
         if(objectiveSubject != null)
+        {
             objectiveSubject.CompletionEvent -= OnObjectiveCompleted;
+            objectiveSubject.objectiveState = ObjectiveStates.NotInProgress;
+        }
         ApplyPostConditions();
         if(CompletionEvent != null)
             CompletionEvent();

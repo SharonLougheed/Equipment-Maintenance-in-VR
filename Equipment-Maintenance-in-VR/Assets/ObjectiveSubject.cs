@@ -5,8 +5,10 @@ using UnityEngine;
 
 public class ObjectiveSubject : MonoBehaviour {
 
-    public event Action CompletionEvent;
     
+    public Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
+    public event Action CompletionEvent;
+
     public bool NotifyCompletion()
     {
         if(CompletionEvent != null)
