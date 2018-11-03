@@ -148,21 +148,43 @@ public class InteractablePart : Throwable {
             {
                 SetEndPointVisibility(false);
             }
-            
+            // To be reactivated when it is relavent to the current objective
+            if(objectiveSubject == null || objectiveSubject.objectiveState == Objective.ObjectiveStates.NotInProgress)
+                endPointGameObject.SetActive(false);
         }
-
     }
 
 
     private void SetEndPointVisibility(bool isVisible)
     {
-        Renderer[] renderers = endPointGameObject.GetComponentsInChildren<Renderer>();
-        for (int i = 0; i < renderers.Length; i++)
+        if(endPointGameObject != null)
         {
-            renderers[i].enabled = isVisible;
+            Renderer[] renderers = endPointGameObject.GetComponentsInChildren<Renderer>();
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                renderers[i].enabled = isVisible;
+            }
         }
     }
 
+    public void ShowEndPointIfApplicable()
+    {
+        if (showEndPointOutline && endPointGameObject != null)
+        {
+            SetEndPointVisibility(true);
+            endPointGameObject.SetActive(true);
+        }
+    }
+
+    private ObjectiveSubject GetObjectiveSubject()
+    {
+        if(objectiveSubject == null)
+        {
+            objectiveSubject = gameObject.GetComponent<ObjectiveSubject>();
+        }
+
+        return objectiveSubject;
+    }
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
@@ -213,7 +235,7 @@ public class InteractablePart : Throwable {
         selfBoundsExpired = true;
         selfCenter = selfGroupBounds.center;
         otherCenter = otherGroupBounds.center;
-        Debug.Log("Distance: " + Vector3.Distance(selfCenter, otherCenter));
+        //Debug.Log("Distance: " + Vector3.Distance(selfCenter, otherCenter));
         return Vector3.Distance(selfCenter, otherCenter) <= limit ? true : false;
     }
 
@@ -273,6 +295,7 @@ public class InteractablePart : Throwable {
         }
 
         GrabTypes startingGrabType = hand.GetGrabStarting();
+
         if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
         {
             // Attach this object to the hand
@@ -432,92 +455,106 @@ public class InteractablePart : Throwable {
 
             // Call this to undo HoverLock
             //hand.HoverUnlock(interactable);
-            if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
+            if (GetObjectiveSubject() != null && GetObjectiveSubject().objectiveState == Objective.ObjectiveStates.InProgress)
             {
-                // First test if they are at least overlapping
-                if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
+                if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
                 {
-                    if (endPointGameObject != null
-                    && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
-                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
+                    // First test if they are at least overlapping
+                    if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
                     {
-                        // Move to End point transform
-                        gameObject.transform.position = endPointGameObject.transform.position;
-                        gameObject.transform.rotation = endPointGameObject.transform.rotation;
-                        UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                        OnAcceptablePlacement();
+                        if (endPointGameObject != null
+                        && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+                        && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
+                        {
+                            // Move to End point transform
+                            gameObject.transform.position = endPointGameObject.transform.position;
+                            gameObject.transform.rotation = endPointGameObject.transform.rotation;
+                            UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                            OnAcceptablePlacement();
+                        }
+                        else
+                        {
+                            UpdatePlacementState(PlacementStates.UnacceptablePlaced);
+                        }
                     }
                     else
                     {
-                        UpdatePlacementState(PlacementStates.UnacceptablePlaced);
+                        UpdatePlacementState(PlacementStates.DefaultPlaced);
                     }
                 }
-                else
+                else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
                 {
+                    // For now dropping it anywhere implies a successful movement away from a location
+                    OnAcceptablePlacement();
                     UpdatePlacementState(PlacementStates.DefaultPlaced);
                 }
             }
-            else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
+            else
             {
-                // For now dropping it anywhere implies a successful movement away from a location
-                OnAcceptablePlacement();
+                
                 UpdatePlacementState(PlacementStates.DefaultPlaced);
             }
+            
         }
 
         if (endPointGameObject != null
             && interactable.attachedToHand != null
             )
         {
-            if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
+            if (GetObjectiveSubject() != null && GetObjectiveSubject().objectiveState == Objective.ObjectiveStates.InProgress)
             {
-                // First check if they are at least overlapping
-                if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
+                if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
                 {
-                    // Then if they are relatively close in position and rotation
-                    if (IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
-                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
+                    // First check if they are at least overlapping
+                    if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
                     {
-                        switch (currentPlacementState)
+                        // Then if they are relatively close in position and rotation
+                        if (IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+                        && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
                         {
-                            case PlacementStates.AcceptableHoverCanDetach:
-                                // Detach this object from the hand
-                                hand.DetachObject(gameObject, restoreOriginalParent);
-                                // Move to End point transform
-                                gameObject.transform.position = endPointGameObject.transform.position;
-                                gameObject.transform.rotation = endPointGameObject.transform.rotation;
-                                UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                                OnAcceptablePlacement();
-                                break;
-                            case PlacementStates.AcceptablePlaced:
-                                UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                                break;
-                            case PlacementStates.UnacceptableHover:
-                                if (snapAndDetach)
-                                {
-                                    UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
-                                }
-                                else
-                                {
+                            switch (currentPlacementState)
+                            {
+                                case PlacementStates.AcceptableHoverCanDetach:
+                                    // Detach this object from the hand
+                                    hand.DetachObject(gameObject, restoreOriginalParent);
+                                    // Move to End point transform
+                                    gameObject.transform.position = endPointGameObject.transform.position;
+                                    gameObject.transform.rotation = endPointGameObject.transform.rotation;
+                                    UpdatePlacementState(PlacementStates.AcceptablePlaced);
+                                    OnAcceptablePlacement();
+                                    break;
+                                case PlacementStates.AcceptablePlaced:
                                     UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                                }
-                                break;
+                                    break;
+                                case PlacementStates.UnacceptableHover:
+                                    if (snapAndDetach)
+                                    {
+                                        UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
+                                    }
+                                    else
+                                    {
+                                        UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
+                                    }
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            UpdatePlacementState(PlacementStates.UnacceptableHover);
                         }
                     }
                     else
                     {
-                        UpdatePlacementState(PlacementStates.UnacceptableHover);
+                        UpdatePlacementState(PlacementStates.DefaultHeld);
                     }
                 }
-                else
+                else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
                 {
-                    UpdatePlacementState(PlacementStates.DefaultHeld);
+                    // Do nothing
                 }
             }
-            else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
-            {
-                // Do nothing
-            }
+
+            
 
         }
 

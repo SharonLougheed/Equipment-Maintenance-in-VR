@@ -75,15 +75,16 @@ public class Objective : MonoBehaviour {
         }
         else // This scripts objective
         {
-            ApplyPreConditions();
             if (objectiveSubject != null)
             {
                 Debug.Log(title + " objective started!");
                 objectiveSubject.objectiveState = ObjectiveStates.InProgress;
+                ApplyPreConditions();
                 objectiveSubject.CompletionEvent += OnObjectiveCompleted;
             }
             else
             {
+                ApplyPreConditions();
                 Debug.Log("Error: Objective \"" + title + "\" ObjectiveSubject is null. Completing immediately");
                 OnObjectiveCompleted();
             }

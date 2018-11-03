@@ -144,7 +144,7 @@ namespace Valve.VR.InteractionSystem
 
 			onPickUp.Invoke();
 
-			hand.HoverLock( null );
+			hand.HoverLock( interactable );
             
             rigidbody.interpolation = RigidbodyInterpolation.None;
             
@@ -170,7 +170,7 @@ namespace Valve.VR.InteractionSystem
 
             onDetachFromHand.Invoke();
 
-            hand.HoverUnlock(null);
+            hand.HoverUnlock(interactable);
             
             rigidbody.interpolation = hadInterpolation;
 
