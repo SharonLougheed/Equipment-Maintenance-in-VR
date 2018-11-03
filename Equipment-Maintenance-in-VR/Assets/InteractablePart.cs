@@ -8,7 +8,7 @@ using Valve.VR.InteractionSystem;
 public class InteractablePart : Throwable {
 
     public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
-    public Transform endPointTransform;
+    public Transform endingLocation;
     public bool showEndPointOutline = true;
     public float acceptableDegreesFromEndPoint = 10f;
     public float acceptableMetersFromEndPoint = 0.1f;
@@ -22,14 +22,15 @@ public class InteractablePart : Throwable {
     public Material unacceptablePlacementMaterial;
 
     private ObjectiveSubject objectiveSubject;
-
+    private Transform endPointTransform;
+    private GameObject endPointGameObject;
     private Bounds selfGroupBounds;
     private Bounds otherGroupBounds;
     private Vector3 selfCenter;
     private Vector3 otherCenter;
     private bool selfBoundsExpired = true;
     private bool otherBoundsExpired = true;
-    private List<GameObject> endPointGameObjects;
+    private List<GameObject> endPointObjectList;
     private Dictionary<int, Material[]> endPointOriginalMaterials;
     private Dictionary<int, Collider> endPointColliders;
     private enum PlacementStates { DefaultPlaced, DefaultHeld, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced, UnacceptablePlaced };
@@ -118,36 +119,44 @@ public class InteractablePart : Throwable {
 
     private void InitializeEndPoint()
     {
-        if(endPointTransform != null)
+        if (endingLocation != null)
         {
-            endPointGameObjects = GetAllGameObjectsAtOrBelow(endPointTransform.gameObject);
-            endPointOriginalMaterials = SaveOriginalMaterials(endPointGameObjects);
-            if (showEndPointOutline)
-            {
-                ApplyMaterialToList(endPointGameObjects, defaultOutlineMaterial);
-            }
-            else
-            {
-                SetEndPointVisibility(false);
-            }
+
+            endPointGameObject = Instantiate(gameObject, endingLocation.position, endingLocation.rotation);
+            Destroy(endPointGameObject.GetComponent<InteractablePart>());
+            Destroy(endPointGameObject.GetComponent<Rigidbody>());
+            Destroy(endPointGameObject.GetComponent<Throwable>());
+            Destroy(endPointGameObject.GetComponent<VelocityEstimator>());
+            Destroy(endPointGameObject.GetComponent<Interactable>());
+
+            endPointObjectList = GetAllGameObjectsAtOrBelow(endPointGameObject);
+            endPointOriginalMaterials = SaveOriginalMaterials(endPointObjectList);
+
+            ApplyMaterialToList(endPointObjectList, defaultOutlineMaterial);
+
             endPointColliders = new Dictionary<int, Collider>();
-            for (int i = 0; i < endPointGameObjects.Count; i++)
+            for (int i = 0; i < endPointObjectList.Count; i++)
             {
-                Collider collider = endPointGameObjects[i].GetComponent<Collider>();
+                Collider collider = endPointObjectList[i].GetComponent<Collider>();
                 if (collider != null)
                 {
                     collider.isTrigger = true;
                     endPointColliders.Add(collider.GetInstanceID(), collider);
                 }
             }
-            //endPointTransform.gameObject.SetActive(false);
+            if (!showEndPointOutline)
+            {
+                SetEndPointVisibility(false);
+            }
+            
         }
+
     }
 
 
     private void SetEndPointVisibility(bool isVisible)
     {
-        Renderer[] renderers = endPointTransform.gameObject.GetComponentsInChildren<Renderer>();
+        Renderer[] renderers = endPointGameObject.GetComponentsInChildren<Renderer>();
         for (int i = 0; i < renderers.Length; i++)
         {
             renderers[i].enabled = isVisible;
@@ -204,7 +213,7 @@ public class InteractablePart : Throwable {
         selfBoundsExpired = true;
         selfCenter = selfGroupBounds.center;
         otherCenter = otherGroupBounds.center;
-        //Debug.Log("Distance: " + Vector3.Distance(selfCenter, otherCenter));
+        Debug.Log("Distance: " + Vector3.Distance(selfCenter, otherCenter));
         return Vector3.Distance(selfCenter, otherCenter) <= limit ? true : false;
     }
 
@@ -264,8 +273,6 @@ public class InteractablePart : Throwable {
         }
 
         GrabTypes startingGrabType = hand.GetGrabStarting();
-        bool isGrabEnding = hand.IsGrabEnding(this.gameObject);
-
         if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
         {
             // Attach this object to the hand
@@ -325,13 +332,13 @@ public class InteractablePart : Throwable {
                     break;
             }
             // Make changes on End Point Part to reflect state change (only if its going to be visible)
-            if (endPointTransform != null && showEndPointOutline)
+            if (endPointGameObject != null && showEndPointOutline)
             {
                 // change conditions coming out of specific states
                 switch (oldState)
                 {
                     case PlacementStates.AcceptablePlaced:
-                        endPointTransform.gameObject.SetActive(true);
+                        endPointGameObject.SetActive(true);
                         break;
                 }
                 // change conditions going to specifc states
@@ -339,18 +346,18 @@ public class InteractablePart : Throwable {
                 {
                     case PlacementStates.DefaultPlaced:
                     case PlacementStates.DefaultHeld:
-                        ApplyMaterialToList(endPointGameObjects, defaultOutlineMaterial);
+                        ApplyMaterialToList(endPointObjectList, defaultOutlineMaterial);
                         break;
                     case PlacementStates.UnacceptableHover:
                     case PlacementStates.UnacceptablePlaced:
-                        ApplyMaterialToList(endPointGameObjects, unacceptablePlacementMaterial);
+                        ApplyMaterialToList(endPointObjectList, unacceptablePlacementMaterial);
                         break;
                     case PlacementStates.AcceptableHoverCanDetach:
                     case PlacementStates.AcceptableHoverNoDetach:
-                        ApplyMaterialToList(endPointGameObjects, acceptablePlacementMaterial);
+                        ApplyMaterialToList(endPointObjectList, acceptablePlacementMaterial);
                         break;
                     case PlacementStates.AcceptablePlaced:
-                        endPointTransform.gameObject.SetActive(false);
+                        endPointGameObject.SetActive(false);
                         break;
                 }
             }
@@ -363,7 +370,7 @@ public class InteractablePart : Throwable {
         //Debug.Log("OnTriggerEnter");
         if( showEndPointOutline
             && other != null
-            && endPointTransform != null
+            && endPointGameObject != null
             && endPointColliders.ContainsKey(other.GetInstanceID()))
         {
             isTouchingEndPoint = true;
@@ -376,7 +383,7 @@ public class InteractablePart : Throwable {
         //Debug.Log("OnTriggerExit");
         if (showEndPointOutline
            && other != null
-           && endPointTransform != null
+           && endPointGameObject != null
            && endPointColliders.ContainsKey(other.GetInstanceID()))
         {
             isTouchingEndPoint = false;
@@ -428,15 +435,15 @@ public class InteractablePart : Throwable {
             if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
             {
                 // First test if they are at least overlapping
-                if (isTouchingEndPoint)
+                if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
                 {
-                    if (endPointTransform != null
-                    && IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
-                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
+                    if (endPointGameObject != null
+                    && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
                     {
                         // Move to End point transform
-                        gameObject.transform.position = endPointTransform.position;
-                        gameObject.transform.rotation = endPointTransform.rotation;
+                        gameObject.transform.position = endPointGameObject.transform.position;
+                        gameObject.transform.rotation = endPointGameObject.transform.rotation;
                         UpdatePlacementState(PlacementStates.AcceptablePlaced);
                         OnAcceptablePlacement();
                     }
@@ -458,18 +465,18 @@ public class InteractablePart : Throwable {
             }
         }
 
-        if (endPointTransform != null
+        if (endPointGameObject != null
             && interactable.attachedToHand != null
             )
         {
             if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
             {
                 // First check if they are at least overlapping
-                if (isTouchingEndPoint)
+                if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
                 {
                     // Then if they are relatively close in position and rotation
-                    if (IsWithinRangeOfCenter(endPointTransform, acceptableMetersFromEndPoint)
-                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointTransform.rotation, acceptableDegreesFromEndPoint))
+                    if (IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+                    && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
                     {
                         switch (currentPlacementState)
                         {
@@ -477,8 +484,8 @@ public class InteractablePart : Throwable {
                                 // Detach this object from the hand
                                 hand.DetachObject(gameObject, restoreOriginalParent);
                                 // Move to End point transform
-                                gameObject.transform.position = endPointTransform.position;
-                                gameObject.transform.rotation = endPointTransform.rotation;
+                                gameObject.transform.position = endPointGameObject.transform.position;
+                                gameObject.transform.rotation = endPointGameObject.transform.rotation;
                                 UpdatePlacementState(PlacementStates.AcceptablePlaced);
                                 OnAcceptablePlacement();
                                 break;
