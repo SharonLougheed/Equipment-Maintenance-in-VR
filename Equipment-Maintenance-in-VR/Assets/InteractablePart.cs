@@ -7,20 +7,19 @@ using Valve.VR.InteractionSystem;
 
 public class InteractablePart : Throwable {
 
+    public Transform gripAttachOffset;
+    public Transform pinchAttachOffset;
     public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
     public Transform endingLocation;
     public bool showEndPointOutline = true;
     public float acceptableDegreesFromEndPoint = 10f;
     public float acceptableMetersFromEndPoint = 0.1f;
-    public bool snapAndDetach = true;
+    public bool detachAndSnap = true;
     public UnityEvent onAcceptablePlacement;
-    [Tooltip("Material used for showing where replacement part is supposed to go. Default is OrangeOutline")]
-    public Material defaultOutlineMaterial;
-    [Tooltip("Material used for showing the user's replacement part is acceptable. Default is GreenOutline")]
-    public Material acceptablePlacementMaterial;
-    [Tooltip("Material used for showing the user's replacement part is not acceptable. Default is RedOutline")]
-    public Material unacceptablePlacementMaterial;
 
+    private Material defaultOutlineMaterial;
+    private Material acceptablePlacementMaterial;
+    private Material unacceptablePlacementMaterial;
     private ObjectiveSubject objectiveSubject;
     private Transform endPointTransform;
     private GameObject endPointGameObject;
@@ -36,23 +35,13 @@ public class InteractablePart : Throwable {
     private enum PlacementStates { DefaultPlaced, DefaultHeld, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced, UnacceptablePlaced };
     private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
-
+    
     protected override void Awake()
     {
         base.Awake();
-
-        if (defaultOutlineMaterial == null)
-        {
-            defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
-        }
-        if (acceptablePlacementMaterial == null)
-        {
-            acceptablePlacementMaterial = Resources.Load("Materials/OutlineMatGreen") as Material;
-        }
-        if (unacceptablePlacementMaterial == null)
-        {
-            unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
-        }
+        defaultOutlineMaterial = Resources.Load("Materials/OutlineMatOrange") as Material;
+        acceptablePlacementMaterial = Resources.Load("Materials/OutlineMatGreen") as Material;
+        unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
     }
 
 
@@ -299,7 +288,20 @@ public class InteractablePart : Throwable {
         if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
         {
             // Attach this object to the hand
-            hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags);
+            
+            if (startingGrabType == GrabTypes.Pinch)
+            {
+                hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, pinchAttachOffset);
+            }
+            else if (startingGrabType == GrabTypes.Grip)
+            {
+                hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, gripAttachOffset);
+            }
+            else
+            {
+                hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, base.attachmentOffset);
+            }
+            
             hand.HideGrabHint();
             if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
             {
@@ -310,19 +312,6 @@ public class InteractablePart : Throwable {
                 UpdatePlacementState(PlacementStates.DefaultHeld);
             }
         }
-
-        //if (hand.IsGrabEnding(this.gameObject))
-        //{
-        //    hand.DetachObject(gameObject, restoreOriginalParent);
-
-        //    // Uncomment to detach ourselves late in the frame.
-        //    // This is so that any vehicles the player is attached to
-        //    // have a chance to finish updating themselves.
-        //    // If we detach now, our position could be behind what it
-        //    // will be at the end of the frame, and the object may appear
-        //    // to teleport behind the hand when the player releases it.
-        //    //StartCoroutine( LateDetach( hand ) );
-        //}
     }
 
 
@@ -529,7 +518,7 @@ public class InteractablePart : Throwable {
                                     UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
                                     break;
                                 case PlacementStates.UnacceptableHover:
-                                    if (snapAndDetach)
+                                    if (detachAndSnap)
                                     {
                                         UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
                                     }
