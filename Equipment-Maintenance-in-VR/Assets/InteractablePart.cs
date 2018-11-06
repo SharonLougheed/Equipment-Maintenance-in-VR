@@ -445,9 +445,11 @@ public class InteractablePart : Throwable {
     //-------------------------------------------------
     protected override void HandAttachedUpdate(Hand hand)
     {
-        //Throwable will detach the object
-        //base.HandAttachedUpdate(hand);
-
+        bool isFallbackHand = hand.name == "FallbackHand" ? true : false;
+        if (isFallbackHand)
+        {
+            return;
+        }
         if (hand.IsGrabEnding(this.gameObject))
         {
             // Detach this object from the hand
