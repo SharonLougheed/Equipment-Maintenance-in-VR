@@ -38,7 +38,7 @@ public class InteractablePart : Throwable {
     private enum PlacementStates { DefaultPlaced, DefaultHeld, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced, UnacceptablePlaced };
     private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
-    
+    private bool endPointActiveState = false;    
     protected override void Awake()
     {
         base.Awake();
@@ -62,19 +62,6 @@ public class InteractablePart : Throwable {
         {
             allObjects[i].isStatic = isStatic;
         }
-    }
-
-
-    private Dictionary<int, Material[]> SaveOriginalMaterials(List<GameObject> gameObjects)
-    {
-        Dictionary<int, Material[]> ogMaterials = new Dictionary<int, Material[]>();
-        foreach (GameObject obj in gameObjects)
-        {
-            Renderer renderer = obj.GetComponent<Renderer>();
-            if (renderer != null)
-                ogMaterials.Add(obj.GetInstanceID(), renderer.materials);
-        }
-        return ogMaterials;
     }
 
 
@@ -122,8 +109,6 @@ public class InteractablePart : Throwable {
             Destroy(endPointGameObject.GetComponent<Interactable>());
 
             endPointObjectList = GetAllGameObjectsAtOrBelow(endPointGameObject);
-            endPointOriginalMaterials = SaveOriginalMaterials(endPointObjectList);
-
             ApplyMaterialToList(endPointObjectList, defaultOutlineMaterial);
 
             endPointColliders = new Dictionary<int, Collider>();
@@ -140,9 +125,7 @@ public class InteractablePart : Throwable {
             {
                 SetEndPointVisibility(false);
             }
-            // To be reactivated when it is relavent to the current objective
-            if(objectiveSubject == null || objectiveSubject.objectiveState == Objective.ObjectiveStates.NotInProgress)
-                endPointGameObject.SetActive(false);
+            endPointGameObject.SetActive(endPointActiveState);
         }
     }
 
@@ -161,10 +144,14 @@ public class InteractablePart : Throwable {
 
     public void ShowEndPointIfApplicable()
     {
-        if (showEndPointOutline && endPointGameObject != null)
+        if (showEndPointOutline)
         {
-            SetEndPointVisibility(true);
-            endPointGameObject.SetActive(true);
+            endPointActiveState = true;
+            if (endPointGameObject != null)
+            {
+                endPointGameObject.SetActive(endPointActiveState);
+                SetEndPointVisibility(true);
+            }
         }
     }
 
