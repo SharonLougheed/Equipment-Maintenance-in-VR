@@ -12,8 +12,11 @@ public class InteractablePart : Throwable {
     public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
     public Transform endingLocation;
     public bool showEndPointOutline = true;
-    public float acceptableDegreesFromEndPoint = 10f;
+    public float acceptableDegreesFromEndPoint = 5f;
     public float acceptableMetersFromEndPoint = 0.1f;
+    public bool checkXaxis = true;
+    public bool checkYaxis = true;
+    public bool checkZaxis = true;
     public bool detachAndSnap = true;
     public UnityEvent onAcceptablePlacement;
 
@@ -204,8 +207,28 @@ public class InteractablePart : Throwable {
 
     private bool IsWithinRangeOfRotation(Quaternion rot1, Quaternion rot2, float limit)
     {
-        // Debug.Log("Rotation between objects: " + Quaternion.Angle(rot1, rot2));
-        return Quaternion.Angle(rot1, rot2) <= limit ? true : false;
+        if (checkXaxis)
+        {
+            float angle = Math.Abs(rot1.eulerAngles.x - rot2.eulerAngles.x) % 360;
+            angle = angle > 180 ? 360 - angle : angle;
+            if (angle > limit)
+                return false;
+        }
+        if (checkYaxis)
+        {
+            float angle = Math.Abs(rot1.eulerAngles.y - rot2.eulerAngles.y) % 360;
+            angle = angle > 180 ? 360 - angle : angle;
+            if (angle > limit)
+                return false;
+        }
+        if (checkZaxis)
+        {
+            float angle = Math.Abs(rot1.eulerAngles.z - rot2.eulerAngles.z) % 360;
+            angle = angle > 180 ? 360 - angle : angle;
+            if (angle > limit)
+                return false;
+        }
+        return true;
     }
 
     private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
