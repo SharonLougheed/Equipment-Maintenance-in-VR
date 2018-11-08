@@ -2,11 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.GlobalIllumination;
+using Valve.VR;
+using Valve.VR.InteractionSystem;
+
 
 public class FlashlightToggle : MonoBehaviour
 {
     public GameObject lightGO; //light gameObject to work with
     private bool isOn = true; //is flashlight on or off?
+    public Hand left;
+    public Hand right;
+
 
     // Use this for initialization
     void Start()
@@ -18,8 +24,13 @@ public class FlashlightToggle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+    }
+    void HandAttachedUpdate(Hand hand)
+    {
+        //Debug.Log("holding the object now.");
         //toggle flashlight on key down
-        if (Input.GetKeyDown(KeyCode.X))
+        if (SteamVR_Input._default.inActions.Teleport.GetStateDown(hand.handType)) 
         {
             //toggle light
             isOn = !isOn;
