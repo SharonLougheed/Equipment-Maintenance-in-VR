@@ -30,7 +30,7 @@ public class GarageDoorBig : MonoBehaviour {
         if (!opened)
         {
             // TODO
-            if (SteamVR_Input._default.inActions.GrabPinch.GetStateDown(left.handType) || SteamVR_Input._default.inActions.GrabPinch.GetStateDown(right.handType))
+            if (SteamVR_Input._default.inActions.GrabPinch.GetStateDown(hand.handType))
             {
                 opened = true;
                 //MessageUI.gameObject.SetActive(false);
@@ -39,7 +39,7 @@ public class GarageDoorBig : MonoBehaviour {
         }
         else if (opened)
         {
-            if (SteamVR_Input._default.inActions.GrabPinch.GetStateDown(left.handType) || SteamVR_Input._default.inActions.GrabPinch.GetStateDown(right.handType))
+            if (SteamVR_Input._default.inActions.GrabPinch.GetStateDown(hand.handType))
             {
                 opened = false;
                 //MessageUI.gameObject.SetActive(true);
