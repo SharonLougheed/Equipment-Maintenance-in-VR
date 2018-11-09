@@ -7,19 +7,18 @@ using Valve.VR.InteractionSystem;
 
 public class MovementObjective : MonoBehaviour, IObjectiveCommands {
 
-    public Camera vrCamera;
+
+    public Collider vrCollider;
     public TeleportPoint teleportPoint;
     public Hand hand;
     public SteamVR_Action_Boolean teleportAction;
-    public float distance = 0.2f;
-    private int frameCount = 0;
-
+    public event Action CompletionEvent;
+    private CapsuleCollider teleporterCollider;
     private bool teleportActiveState = false;
     private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
-    public event Action CompletionEvent;
+    private float colliderHeight = 2.0f;
+    private float colliderRadius = 0.3065555f;
 
-    // TODO Find out why distance between vrCamera and teleportPoint is > 1m 
-    // TODO Optionally disable teleportArea that covers entire ground to clearly indicate where they can go
 
     public void OnObjectiveReset()
     {
@@ -30,24 +29,23 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
     public void OnObjectiveStart()
     {
         objectiveState = Objective.ObjectiveStates.InProgress;
+        teleporterCollider = gameObject.AddComponent<CapsuleCollider>();
+        teleporterCollider.center = new Vector3(teleportPoint.transform.localPosition.x, teleportPoint.transform.localPosition.y + colliderHeight / 2, teleportPoint.transform.localPosition.z);
+        teleporterCollider.radius = colliderRadius;
+        teleporterCollider.height = colliderHeight;
+        teleporterCollider.direction = 1; // Y-axis
+        teleporterCollider.isTrigger = true;
         teleportActiveState = true;
         teleportPoint.gameObject.SetActive(teleportActiveState);
-        if(teleportAction != null)
-        {
-            teleportAction.AddOnChangeListener(OnTeleportActionChange, hand.handType);
-        }
     }
 
-
+    
     public void OnObjectiveFinish()
     {
-        Debug.Log("Completing movement objective..");
-        CompletionEvent();
-        if (teleportAction != null)
-        {
-            teleportAction.RemoveOnChangeListener(OnTeleportActionChange, hand.handType);
-        }
+        Destroy(teleporterCollider);
+        teleportPoint.gameObject.SetActive(false);
         objectiveState = Objective.ObjectiveStates.NotInProgress;
+        CompletionEvent();
     }
 
     void Start()
@@ -55,20 +53,14 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
         teleportPoint.gameObject.SetActive(teleportActiveState);
     }
 
-    private void OnTeleportActionChange(SteamVR_Action_In actionIn)
-    {
-        var tempTransform1 = vrCamera.transform.position;
-        tempTransform1.y = 0;
-        var tempTransform2 = teleportPoint.transform.position;
-        tempTransform2.y = 0;
 
-        if (Vector3.Distance(tempTransform1, tempTransform2) <= distance)
+    void OnTriggerEnter(Collider other)
+    {
+        if(objectiveState == Objective.ObjectiveStates.InProgress)
         {
-            OnObjectiveFinish();
-        }
-        else
-        {
-            Debug.Log("Too far away: " + Vector3.Distance(tempTransform1, tempTransform2) + "m.");
+            if(other.GetInstanceID() == vrCollider.GetInstanceID()) {
+                OnObjectiveFinish();
+            }
         }
     }
 }
