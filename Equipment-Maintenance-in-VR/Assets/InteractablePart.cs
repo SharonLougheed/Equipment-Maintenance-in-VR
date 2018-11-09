@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Valve.VR.InteractionSystem;
 
-public class InteractablePart : Throwable {
+public class InteractablePart : Throwable, ObjectiveCommands {
 
     public Transform gripAttachOffset;
     public Transform pinchAttachOffset;
@@ -576,5 +576,28 @@ public class InteractablePart : Throwable {
     //-------------------------------------------------
     private void OnHandFocusLost(Hand hand)
     {
+    }
+
+    public void OnObjectiveStart()
+    {
+        if (showEndPointOutline)
+        {
+            endPointActiveState = true;
+            if (endPointGameObject != null)
+            {
+                endPointGameObject.SetActive(endPointActiveState);
+                SetEndPointVisibility(true);
+            }
+        }
+    }
+
+    public void OnObjectiveReset()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void OnObjectiveFinish()
+    {
+        throw new NotImplementedException();
     }
 }
