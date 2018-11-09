@@ -16,20 +16,22 @@ public class Objective : MonoBehaviour {
     public UnityEvent PreConditions;
     [Tooltip("Actions applied after this objective is completed")]
     public UnityEvent PostConditions;
-
+    
+    
     private bool isParentObjective;
     private InteractablePart part;
+    private List<Objective> allObjectives;
     private List<Objective> childObjectives;
     private int currentObjectiveIndex = 0;
     private event Action CompletionEvent;
-    private ObjectiveSubject objectiveSubject;
+    private IObjectiveCommands objectiveCommands;
 
     void Awake()
     {
         childObjectives = GetChildObjectives();
         if(subjectGameObject != null)
         {
-            objectiveSubject = subjectGameObject.AddComponent<ObjectiveSubject>();
+            objectiveCommands = subjectGameObject.GetComponent<IObjectiveCommands>();
             part = subjectGameObject.GetComponent<InteractablePart>();
         }
     }
@@ -75,18 +77,17 @@ public class Objective : MonoBehaviour {
         }
         else // This scripts objective
         {
-            if (objectiveSubject != null)
+            if (objectiveCommands != null)
             {
                 Debug.Log(title + " objective started!");
-                objectiveSubject.objectiveState = ObjectiveStates.InProgress;
-                subjectGameObject.GetComponent<ObjectiveCommands>().OnObjectiveStart();
+                objectiveCommands.OnObjectiveStart();
                 ApplyPreConditions();
-                objectiveSubject.CompletionEvent += OnObjectiveCompleted;
+                objectiveCommands.CompletionEvent += OnObjectiveCompleted;
             }
             else
             {
                 ApplyPreConditions();
-                Debug.Log("Error: Objective \"" + title + "\" ObjectiveSubject is null. Completing immediately");
+                Debug.Log("Error: Objective \"" + title + "\" Objective Subject is null. Completing immediately");
                 OnObjectiveCompleted();
             }
 
@@ -104,11 +105,10 @@ public class Objective : MonoBehaviour {
 
     private void OnObjectiveCompleted()
     {
-        if(objectiveSubject != null)
+        Debug.Log("Completed objective " + title);
+        if (objectiveCommands != null)
         {
-            objectiveSubject.CompletionEvent -= OnObjectiveCompleted;
-            objectiveSubject.GetComponent<ObjectiveCommands>().OnObjectiveFinish();
-            objectiveSubject.objectiveState = ObjectiveStates.NotInProgress;
+            objectiveCommands.CompletionEvent -= OnObjectiveCompleted;
         }
         ApplyPostConditions();
         if(CompletionEvent != null)
@@ -128,5 +128,4 @@ public class Objective : MonoBehaviour {
         //Debug.Log(title + " Applying post-conditions");
         PostConditions.Invoke();
     }
-
 }
