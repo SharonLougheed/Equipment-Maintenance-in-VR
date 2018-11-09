@@ -41,6 +41,7 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
 
     public void OnObjectiveFinish()
     {
+        Debug.Log("Completing movement objective..");
         CompletionEvent();
         if (teleportAction != null)
         {
@@ -64,6 +65,10 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
         if (Vector3.Distance(tempTransform1, tempTransform2) <= distance)
         {
             OnObjectiveFinish();
+        }
+        else
+        {
+            Debug.Log("Too far away: " + Vector3.Distance(tempTransform1, tempTransform2) + "m.");
         }
     }
 }

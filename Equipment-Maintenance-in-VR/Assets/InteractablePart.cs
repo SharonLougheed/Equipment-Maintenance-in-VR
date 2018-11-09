@@ -24,7 +24,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     private Material defaultOutlineMaterial;
     private Material acceptablePlacementMaterial;
     private Material unacceptablePlacementMaterial;
-    private ObjectiveSubject objectiveSubject;
     private Transform endPointTransform;
     private GameObject endPointGameObject;
     private Bounds selfGroupBounds;
@@ -53,7 +52,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
 
     void Start () {
-        //ObjectiveSubject objectiveSubject = GetComponent<ObjectiveSubject>();
         SetStatic(gameObject, false);
         InitializeEndPoint();
     }
@@ -481,7 +479,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             }
             else
             {
-                
                 UpdatePlacementState(PlacementStates.DefaultPlaced);
             }
             
@@ -570,7 +567,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
     public void OnObjectiveStart()
     {
-        objectiveState = Objective.ObjectiveStates.NotInProgress;
+        objectiveState = Objective.ObjectiveStates.InProgress;
         if (showEndPointOutline)
         {
             endPointActiveState = true;

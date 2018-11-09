@@ -105,10 +105,10 @@ public class Objective : MonoBehaviour {
 
     private void OnObjectiveCompleted()
     {
-        if(objectiveCommands != null)
+        Debug.Log("Completed objective " + title);
+        if (objectiveCommands != null)
         {
             objectiveCommands.CompletionEvent -= OnObjectiveCompleted;
-            objectiveCommands.OnObjectiveFinish();
         }
         ApplyPostConditions();
         if(CompletionEvent != null)
