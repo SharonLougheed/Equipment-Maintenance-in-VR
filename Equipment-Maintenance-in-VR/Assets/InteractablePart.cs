@@ -5,11 +5,12 @@ using UnityEngine;
 using UnityEngine.Events;
 using Valve.VR.InteractionSystem;
 
-public class InteractablePart : Throwable, ObjectiveCommands {
+public class InteractablePart : Throwable, IObjectiveCommands {
 
     public Transform gripAttachOffset;
     public Transform pinchAttachOffset;
     public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
+    private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     public Transform endingLocation;
     public bool showEndPointOutline = true;
     public float acceptableDegreesFromEndPoint = 5f;
@@ -38,7 +39,10 @@ public class InteractablePart : Throwable, ObjectiveCommands {
     private enum PlacementStates { DefaultPlaced, DefaultHeld, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced, UnacceptablePlaced };
     private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
-    private bool endPointActiveState = false;    
+    private bool endPointActiveState = false;
+    
+    public event Action CompletionEvent;
+
     protected override void Awake()
     {
         base.Awake();
@@ -49,7 +53,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
 
 
     void Start () {
-        ObjectiveSubject objectiveSubject = GetComponent<ObjectiveSubject>();
+        //ObjectiveSubject objectiveSubject = GetComponent<ObjectiveSubject>();
         SetStatic(gameObject, false);
         InitializeEndPoint();
     }
@@ -155,27 +159,10 @@ public class InteractablePart : Throwable, ObjectiveCommands {
         }
     }
 
-    private ObjectiveSubject GetObjectiveSubject()
-    {
-        if(objectiveSubject == null)
-        {
-            objectiveSubject = gameObject.GetComponent<ObjectiveSubject>();
-        }
 
-        return objectiveSubject;
-    }
     private void OnAcceptablePlacement()
     {
         onAcceptablePlacement.Invoke();
-        // if an objective recently added it
-        if(objectiveSubject == null)
-        {
-            objectiveSubject = GetComponent<ObjectiveSubject>();
-        }
-        if(objectiveSubject != null)
-        {
-            objectiveSubject.NotifyCompletion();
-        }
     }
 
 
@@ -456,7 +443,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
 
             // Call this to undo HoverLock
             //hand.HoverUnlock(interactable);
-            if (GetObjectiveSubject() != null && GetObjectiveSubject().objectiveState == Objective.ObjectiveStates.InProgress)
+            if (objectiveState == Objective.ObjectiveStates.InProgress)
             {
                 if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
                 {
@@ -472,6 +459,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
                             gameObject.transform.rotation = endPointGameObject.transform.rotation;
                             UpdatePlacementState(PlacementStates.AcceptablePlaced);
                             OnAcceptablePlacement();
+                            OnObjectiveFinish();
                         }
                         else
                         {
@@ -487,6 +475,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
                 {
                     // For now dropping it anywhere implies a successful movement away from a location
                     OnAcceptablePlacement();
+                    OnObjectiveFinish();
                     UpdatePlacementState(PlacementStates.DefaultPlaced);
                 }
             }
@@ -502,7 +491,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
             && interactable.attachedToHand != null
             )
         {
-            if (GetObjectiveSubject() != null && GetObjectiveSubject().objectiveState == Objective.ObjectiveStates.InProgress)
+            if (objectiveState == Objective.ObjectiveStates.InProgress)
             {
                 if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
                 {
@@ -523,6 +512,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
                                     gameObject.transform.rotation = endPointGameObject.transform.rotation;
                                     UpdatePlacementState(PlacementStates.AcceptablePlaced);
                                     OnAcceptablePlacement();
+                                    OnObjectiveFinish();
                                     break;
                                 case PlacementStates.AcceptablePlaced:
                                     UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
@@ -580,6 +570,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
 
     public void OnObjectiveStart()
     {
+        objectiveState = Objective.ObjectiveStates.NotInProgress;
         if (showEndPointOutline)
         {
             endPointActiveState = true;
@@ -598,6 +589,7 @@ public class InteractablePart : Throwable, ObjectiveCommands {
 
     public void OnObjectiveFinish()
     {
-        throw new NotImplementedException();
+        CompletionEvent();
+        objectiveState = Objective.ObjectiveStates.NotInProgress;
     }
 }
