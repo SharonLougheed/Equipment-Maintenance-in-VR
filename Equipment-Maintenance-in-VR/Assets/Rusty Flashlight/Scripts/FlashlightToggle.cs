@@ -30,7 +30,7 @@ public class FlashlightToggle : MonoBehaviour
     {
         //Debug.Log("holding the object now.");
         //toggle flashlight on key down
-        if (SteamVR_Input._default.inActions.Teleport.GetStateDown(hand.handType)) 
+        if (SteamVR_Input._default.inActions.Teleport.GetStateDown(hand.handType))
         {
             //toggle light
             isOn = !isOn;
