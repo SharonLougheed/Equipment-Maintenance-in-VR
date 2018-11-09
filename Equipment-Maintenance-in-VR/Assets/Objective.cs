@@ -79,6 +79,7 @@ public class Objective : MonoBehaviour {
             {
                 Debug.Log(title + " objective started!");
                 objectiveSubject.objectiveState = ObjectiveStates.InProgress;
+                subjectGameObject.GetComponent<ObjectiveCommands>().OnObjectiveStart();
                 ApplyPreConditions();
                 objectiveSubject.CompletionEvent += OnObjectiveCompleted;
             }
@@ -106,6 +107,7 @@ public class Objective : MonoBehaviour {
         if(objectiveSubject != null)
         {
             objectiveSubject.CompletionEvent -= OnObjectiveCompleted;
+            objectiveSubject.GetComponent<ObjectiveCommands>().OnObjectiveFinish();
             objectiveSubject.objectiveState = ObjectiveStates.NotInProgress;
         }
         ApplyPostConditions();
