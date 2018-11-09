@@ -37,12 +37,16 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
         teleporterCollider.isTrigger = true;
         teleportActiveState = true;
         teleportPoint.gameObject.SetActive(teleportActiveState);
+        teleportPoint.markerActive = teleportActiveState;
+
     }
 
-    
+
     public void OnObjectiveFinish()
     {
         Destroy(teleporterCollider);
+        teleportActiveState = false;
+        teleportPoint.markerActive = false;
         teleportPoint.gameObject.SetActive(false);
         objectiveState = Objective.ObjectiveStates.NotInProgress;
         CompletionEvent();
@@ -51,6 +55,7 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
     void Start()
     {
         teleportPoint.gameObject.SetActive(teleportActiveState);
+        teleportPoint.markerActive = teleportActiveState;
     }
 
 
