@@ -8,6 +8,7 @@ public class Objective : MonoBehaviour {
 
     public string title;
     public string description;
+    public bool isCompleted;
     public enum ObjectiveTypes {MoveToLocation, MoveFromLocation, None};
     public enum ObjectiveStates { InProgress, NotInProgress };
     [Tooltip("Select the GameObject that is the subject of this objective")]
@@ -18,9 +19,9 @@ public class Objective : MonoBehaviour {
     public UnityEvent PostConditions;
     
     
+    private Canvas clipboardCanvas; 
     private bool isParentObjective;
-    private InteractablePart part;
-    private List<Objective> allObjectives;
+    private static Objective[] allObjectives;
     private List<Objective> childObjectives;
     private int currentObjectiveIndex = 0;
     private event Action CompletionEvent;
@@ -32,7 +33,6 @@ public class Objective : MonoBehaviour {
         if(subjectGameObject != null)
         {
             objectiveCommands = subjectGameObject.GetComponent<IObjectiveCommands>();
-            part = subjectGameObject.GetComponent<InteractablePart>();
         }
     }
 
@@ -49,6 +49,8 @@ public class Objective : MonoBehaviour {
         {
             //Must be parent objective
             isParentObjective = true;
+            allObjectives = gameObject.GetComponentsInChildren<Objective>();
+            Debug.Log("All Objectives: " + allObjectives.Length);
             StartNextObjective();
         }
 	}
@@ -83,6 +85,7 @@ public class Objective : MonoBehaviour {
                 objectiveCommands.OnObjectiveStart();
                 ApplyPreConditions();
                 objectiveCommands.CompletionEvent += OnObjectiveCompleted;
+                DisplayObjectives();
             }
             else
             {
@@ -90,8 +93,8 @@ public class Objective : MonoBehaviour {
                 Debug.Log("Error: Objective \"" + title + "\" Objective Subject is null. Completing immediately");
                 OnObjectiveCompleted();
             }
-
         }
+        
     }
 
 
@@ -127,5 +130,16 @@ public class Objective : MonoBehaviour {
     {
         //Debug.Log(title + " Applying post-conditions");
         PostConditions.Invoke();
+    }
+
+    private void DisplayObjectives()
+    {
+        if(allObjectives != null)
+        {
+            foreach (var objective in allObjectives)
+            {
+                Debug.Log(objective.title + ": " + (isCompleted ? "Completed" : "Incomplete"));
+            }
+        }       
     }
 }
