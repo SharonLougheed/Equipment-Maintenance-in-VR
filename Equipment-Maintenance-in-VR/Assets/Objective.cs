@@ -2,13 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Events;
 
 public class Objective : MonoBehaviour {
 
     public string title;
     public string description;
-    public bool isCompleted;
+    public bool isCompleted = false;
     public enum ObjectiveTypes {MoveToLocation, MoveFromLocation, None};
     public enum ObjectiveStates { InProgress, NotInProgress };
     [Tooltip("Select the GameObject that is the subject of this objective")]
@@ -19,9 +20,9 @@ public class Objective : MonoBehaviour {
     public UnityEvent PostConditions;
     
     
-    private Canvas clipboardCanvas; 
+    private Text clipboardCanvasText; 
     private bool isParentObjective;
-    private static Objective[] allObjectives;
+    private static List<Objective> allObjectives;
     private List<Objective> childObjectives;
     private int currentObjectiveIndex = 0;
     private event Action CompletionEvent;
@@ -30,7 +31,12 @@ public class Objective : MonoBehaviour {
     void Awake()
     {
         childObjectives = GetChildObjectives();
-        if(subjectGameObject != null)
+        GameObject canvasGameObject = GameObject.Find("ClipboardCanvas");
+        if (canvasGameObject != null)
+        {
+            clipboardCanvasText = canvasGameObject.GetComponentInChildren<Text>();
+        }
+        if (subjectGameObject != null)
         {
             objectiveCommands = subjectGameObject.GetComponent<IObjectiveCommands>();
         }
@@ -49,8 +55,31 @@ public class Objective : MonoBehaviour {
         {
             //Must be parent objective
             isParentObjective = true;
-            allObjectives = gameObject.GetComponentsInChildren<Objective>();
-            Debug.Log("All Objectives: " + allObjectives.Length);
+            //allObjectives = gameObject.GetComponentsInChildren<Objective>();
+            Stack<Transform> stack = new Stack<Transform>();
+            allObjectives = new List<Objective>();
+            Dictionary<int, bool> visited = new Dictionary<int, bool> ();
+            
+            stack.Push(this.transform);
+            while(stack.Count != 0)
+            {
+                Transform parentTransform = stack.Pop();
+                bool isVisited = false;
+                visited.TryGetValue(parentTransform.GetInstanceID(), out isVisited);
+                if(!isVisited)
+                {
+                    visited.Add(parentTransform.GetInstanceID(), true);
+                    allObjectives.Insert(0, parentTransform.gameObject.GetComponent<Objective>());
+                    foreach (Transform child in parentTransform)
+                    {
+                        if(child.GetComponent<Objective>() != null)
+                            stack.Push(child);
+                    }
+                }
+                
+            }
+            Debug.Log("All Objectives: " + allObjectives.Count);
+            DisplayObjectives();
             StartNextObjective();
         }
 	}
@@ -85,7 +114,6 @@ public class Objective : MonoBehaviour {
                 objectiveCommands.OnObjectiveStart();
                 ApplyPreConditions();
                 objectiveCommands.CompletionEvent += OnObjectiveCompleted;
-                DisplayObjectives();
             }
             else
             {
@@ -108,6 +136,7 @@ public class Objective : MonoBehaviour {
 
     private void OnObjectiveCompleted()
     {
+        isCompleted = true;
         Debug.Log("Completed objective " + title);
         if (objectiveCommands != null)
         {
@@ -116,6 +145,7 @@ public class Objective : MonoBehaviour {
         ApplyPostConditions();
         if(CompletionEvent != null)
             CompletionEvent();
+        DisplayObjectives();
     }
 
 
@@ -133,13 +163,17 @@ public class Objective : MonoBehaviour {
     }
 
     private void DisplayObjectives()
-    {
-        if(allObjectives != null)
+    { 
+        if(clipboardCanvasText != null && allObjectives != null)
         {
+            String outputText = "Generator Repair Task List:\n";
             foreach (var objective in allObjectives)
             {
-                Debug.Log(objective.title + ": " + (isCompleted ? "Completed" : "Incomplete"));
+                outputText += (objective.isCompleted ? "☑" : "☐") + " " + objective.title + "\n";
             }
+            Debug.Log(outputText);
+            clipboardCanvasText.text = outputText;
+            
         }       
     }
 }

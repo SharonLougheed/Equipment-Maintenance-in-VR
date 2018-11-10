@@ -137,7 +137,11 @@ namespace Valve.VR.InteractionSystem
         protected virtual void OnAttachedToHand( Hand hand )
 		{
             //Debug.Log("Pickup: " + hand.GetGrabStarting().ToString());
-
+            if(hand == null)
+            {
+                Debug.Log("NULL HAND");
+                return;
+            }
             hadInterpolation = this.rigidbody.interpolation;
 
             attached = true;
