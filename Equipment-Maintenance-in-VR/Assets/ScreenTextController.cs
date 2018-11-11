@@ -7,12 +7,10 @@ public class ScreenTextController : MonoBehaviour {
 
     public Canvas screenCanvas;
     public Text screenText;
-    public string defaultText = @"Fault Code:
-2343 - 
-Fuel Filter Pressure High Above Normal";
+    public string defaultDisplayMessage = "";
     public float blinkTimerSeconds = 1.0f;
     private bool textShowing = false;
-
+    public bool blinkScreenText = false;
 	// Use this for initialization
 	void Start () {
      
@@ -22,15 +20,28 @@ Fuel Filter Pressure High Above Normal";
         }
         else
         {
-            screenText.text = defaultText;
+            screenText.text = defaultDisplayMessage;
             StartCoroutine(BlinkText());
         }
 
 	}
 	
+    public void ClearScreenText()
+    {
+        screenText.text = "";
+    }
+
+    public void ShowScreenText(string text)
+    {
+        if(screenText != null)
+        {
+            screenText.text = text;
+        }
+    }
+
     IEnumerator BlinkText()
     {
-        while (true)
+        while (blinkScreenText)
         {
             screenCanvas.gameObject.SetActive(!screenCanvas.isActiveAndEnabled);
             yield return new WaitForSeconds(blinkTimerSeconds);
