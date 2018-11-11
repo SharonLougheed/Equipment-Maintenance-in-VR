@@ -55,30 +55,7 @@ public class Objective : MonoBehaviour {
         {
             //Must be parent objective
             isParentObjective = true;
-            //allObjectives = gameObject.GetComponentsInChildren<Objective>();
-            Stack<Transform> stack = new Stack<Transform>();
-            allObjectives = new List<Objective>();
-            Dictionary<int, bool> visited = new Dictionary<int, bool> ();
-            
-            stack.Push(this.transform);
-            while(stack.Count != 0)
-            {
-                Transform parentTransform = stack.Pop();
-                bool isVisited = false;
-                visited.TryGetValue(parentTransform.GetInstanceID(), out isVisited);
-                if(!isVisited)
-                {
-                    visited.Add(parentTransform.GetInstanceID(), true);
-                    allObjectives.Insert(0, parentTransform.gameObject.GetComponent<Objective>());
-                    foreach (Transform child in parentTransform)
-                    {
-                        if(child.GetComponent<Objective>() != null)
-                            stack.Push(child);
-                    }
-                }
-                
-            }
-            Debug.Log("All Objectives: " + allObjectives.Count);
+            allObjectives = GetOrderedObjectives();
             DisplayObjectives();
             StartNextObjective();
         }
@@ -162,18 +139,52 @@ public class Objective : MonoBehaviour {
         PostConditions.Invoke();
     }
 
-    private void DisplayObjectives()
+    private void DisplayObjectives(bool hideEmptyObjectives = true)
     { 
         if(clipboardCanvasText != null && allObjectives != null)
         {
             String outputText = "Generator Repair Task List:\n";
             foreach (var objective in allObjectives)
             {
-                outputText += (objective.isCompleted ? "☑" : "☐") + " " + objective.title + "\n";
+                if (objective != null && (!hideEmptyObjectives || objective.subjectGameObject != null))
+                {
+                    outputText += (objective.isCompleted ? "☑" : "☐") + " " + objective.title + "\n";
+                }
             }
             Debug.Log(outputText);
             clipboardCanvasText.text = outputText;
             
         }       
+    }
+
+    private List<Objective> GetOrderedObjectives()
+    {
+        Stack<Transform> stack = new Stack<Transform>();
+        List<Objective> objectiveList = new List<Objective>();
+        Dictionary<int, bool> visited = new Dictionary<int, bool>();
+
+        stack.Push(this.transform);
+        while (stack.Count != 0)
+        {
+            Transform parentTransform = stack.Pop();
+            bool isVisited = false;
+            visited.TryGetValue(parentTransform.GetInstanceID(), out isVisited);
+            if (!isVisited)
+            {
+                visited.Add(parentTransform.GetInstanceID(), true);
+                Objective objective = parentTransform.gameObject.GetComponent<Objective>();
+                if(objective != null)
+                {
+                    objectiveList.Insert(0, objective);
+                }
+                foreach (Transform child in parentTransform)
+                {
+                    if (child.GetComponent<Objective>() != null)
+                        stack.Push(child);
+                }
+            }
+
+        }
+        return objectiveList;
     }
 }
