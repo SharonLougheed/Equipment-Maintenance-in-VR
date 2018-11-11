@@ -20,11 +20,11 @@ public class Objective : MonoBehaviour {
     public UnityEvent PostConditions;
     
     
-    private Text clipboardCanvasText; 
+    private Text[] clipboardCanvasTextItems;
     private bool isParentObjective;
     private static List<Objective> allObjectives;
     private List<Objective> childObjectives;
-    private int currentObjectiveIndex = 0;
+    private int currentChildObjectiveIndex = 0;
     private event Action CompletionEvent;
     private IObjectiveCommands objectiveCommands;
 
@@ -34,7 +34,7 @@ public class Objective : MonoBehaviour {
         GameObject canvasGameObject = GameObject.Find("ClipboardCanvas");
         if (canvasGameObject != null)
         {
-            clipboardCanvasText = canvasGameObject.GetComponentInChildren<Text>();
+            clipboardCanvasTextItems = canvasGameObject.GetComponentsInChildren<Text>();
         }
         if (subjectGameObject != null)
         {
@@ -78,10 +78,10 @@ public class Objective : MonoBehaviour {
         /* Go through each child objective, only move to the next one when the current one is complete
          * Else there are no child objective left to complete so start this objective
          */
-        if (childObjectives.Count > 0 && currentObjectiveIndex < childObjectives.Count)
+        if (childObjectives.Count > 0 && currentChildObjectiveIndex < childObjectives.Count)
         {
-            childObjectives[currentObjectiveIndex].CompletionEvent += OnChildObjectiveCompleted;
-            childObjectives[currentObjectiveIndex].StartNextObjective();
+            childObjectives[currentChildObjectiveIndex].CompletionEvent += OnChildObjectiveCompleted;
+            childObjectives[currentChildObjectiveIndex].StartNextObjective();
         }
         else // This scripts objective
         {
@@ -95,7 +95,7 @@ public class Objective : MonoBehaviour {
             else
             {
                 ApplyPreConditions();
-                Debug.Log("Error: Objective \"" + title + "\" Objective Subject is null. Completing immediately");
+                Debug.Log("Empty Objective: \"" + title + "\" Completing immediately");
                 OnObjectiveCompleted();
             }
         }
@@ -105,8 +105,8 @@ public class Objective : MonoBehaviour {
 
     private void OnChildObjectiveCompleted()
     {
-        childObjectives[currentObjectiveIndex].CompletionEvent -= OnChildObjectiveCompleted;
-        currentObjectiveIndex++;
+        childObjectives[currentChildObjectiveIndex].CompletionEvent -= OnChildObjectiveCompleted;
+        currentChildObjectiveIndex++;
         StartNextObjective();
     }
 
@@ -140,23 +140,37 @@ public class Objective : MonoBehaviour {
     }
 
     private void DisplayObjectives(bool hideEmptyObjectives = true)
-    { 
-        if(clipboardCanvasText != null && allObjectives != null)
+    {
+        if (clipboardCanvasTextItems != null && clipboardCanvasTextItems.Length > 0 && allObjectives != null)
         {
-            String outputText = "Generator Repair Task List:\n";
-            foreach (var objective in allObjectives)
+            int numVisibleObjectives = clipboardCanvasTextItems.Length;
+            int currentObjectiveIndex = 0;
+            String debugClipboardText = "Debug Clipboard Text:\n";
+
+            ClearClipboard();
+            while (allObjectives[currentObjectiveIndex].isCompleted && currentObjectiveIndex < allObjectives.Count - 1)
+                currentObjectiveIndex++;
+            int outputStartingIndex = ((currentObjectiveIndex) / numVisibleObjectives) * numVisibleObjectives;
+            for (int i = outputStartingIndex, clipboardItemIndex = 0; i < Math.Min(allObjectives.Count, outputStartingIndex + numVisibleObjectives); i++, clipboardItemIndex++)
             {
-                if (objective != null && (!hideEmptyObjectives || objective.subjectGameObject != null))
-                {
-                    outputText += (objective.isCompleted ? "☑" : "☐") + " " + objective.title + "\n";
+                if (allObjectives[i] != null && (!hideEmptyObjectives || allObjectives[i].subjectGameObject != null))
+                { 
+                    clipboardCanvasTextItems[clipboardItemIndex].text =  (allObjectives[i].isCompleted ? "☑" : "☐") + " " + allObjectives[i].title;
+                    debugClipboardText += (allObjectives[i].isCompleted ? "☑" : "☐") + " " + allObjectives[i].title + "\n";
                 }
             }
-            Debug.Log(outputText);
-            clipboardCanvasText.text = outputText;
-            
+            //Debug.Log(debugClipboardText);
         }       
     }
 
+    private void ClearClipboard()
+    {
+        if(clipboardCanvasTextItems != null)
+        {
+            foreach (Text item in clipboardCanvasTextItems)
+                item.text = "";
+        }
+    }
     private List<Objective> GetOrderedObjectives()
     {
         Stack<Transform> stack = new Stack<Transform>();
