@@ -4,16 +4,40 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
+using Valve.VR.InteractionSystem;
 
 public class Objective : MonoBehaviour {
 
     public string title;
     public string description;
     public bool isCompleted = false;
-    public enum ObjectiveTypes {MoveToLocation, MoveFromLocation, None};
+    public enum PartObjectiveTypes {MoveToLocation, MoveFromLocation, None};
+    public enum AllObjetiveTypes { None, MoveToLocation, MoveFromLocation, Interaction, PlayerMovement};
     public enum ObjectiveStates { InProgress, NotInProgress };
     [Tooltip("Select the GameObject that is the subject of this objective")]
     public GameObject subjectGameObject;
+    [Tooltip("Specifies the type of script that the objective will look for")]
+    public AllObjetiveTypes objectiveType = AllObjetiveTypes.None;
+    [Header("Move To Location Settings")]
+    public Transform endingLocation;
+    public bool showEndPointOutline = true;
+    public float acceptableDegreesFromEndPoint = 5f;
+    public float acceptableMetersFromEndPoint = 0.1f;
+    public bool checkXaxis = true;
+    public bool checkYaxis = true;
+    public bool checkZaxis = true;
+    public bool detachAndSnap = true;
+    [Header("Move From Location Settings")]
+    public bool onlyCompleteAfterRelease = true;
+    [Header("Interaction Settings")]
+    public bool requireTriggerPress = true;
+    public bool hapticFeedback = true;
+    [Header("Player Movement Settings")]
+    public Collider vrCollider;
+    public TeleportPoint teleportPoint;
+    public float colliderHeight = 2.0f;
+    public float colliderRadius = 0.3065555f;
+
     [Tooltip("Actions applied as the objective starts")]
     public UnityEvent PreConditions;
     [Tooltip("Actions applied after this objective is completed")]
@@ -26,6 +50,7 @@ public class Objective : MonoBehaviour {
     private List<Objective> childObjectives;
     private int currentChildObjectiveIndex = 0;
     private event Action CompletionEvent;
+    private IObjectiveCommands[] objectiveCommandsList;
     private IObjectiveCommands objectiveCommands;
 
     void Awake()
@@ -36,12 +61,7 @@ public class Objective : MonoBehaviour {
         {
             clipboardCanvasTextItems = canvasGameObject.GetComponentsInChildren<Text>();
         }
-        if (subjectGameObject != null)
-        {
-            objectiveCommands = subjectGameObject.GetComponent<IObjectiveCommands>();
-        }
     }
-
 
     void Start () {
         Objective[] parentObjectives = GetComponentsInParent<Objective>();
@@ -59,7 +79,7 @@ public class Objective : MonoBehaviour {
             DisplayObjectives();
             StartNextObjective();
         }
-	}
+    }
 	
     private List<Objective> GetChildObjectives()
     {
@@ -85,6 +105,8 @@ public class Objective : MonoBehaviour {
         }
         else // This scripts objective
         {
+            ApplyObjectiveSettings();
+
             if (objectiveCommands != null)
             {
                 Debug.Log(title + " objective started!");
@@ -102,7 +124,60 @@ public class Objective : MonoBehaviour {
         
     }
 
-
+    private void ApplyObjectiveSettings()
+    {
+        if (subjectGameObject != null)
+        {
+            switch (objectiveType)
+            {
+                case AllObjetiveTypes.MoveToLocation:
+                    InteractablePart partMoveToLocation = subjectGameObject.GetComponent<InteractablePart>();
+                    if (partMoveToLocation == null)
+                        partMoveToLocation = subjectGameObject.AddComponent<InteractablePart>();
+                    partMoveToLocation.ObjectiveType = PartObjectiveTypes.MoveToLocation;
+                    partMoveToLocation.showEndPointOutline = showEndPointOutline;
+                    partMoveToLocation.acceptableDegreesFromEndPoint = acceptableDegreesFromEndPoint;
+                    partMoveToLocation.acceptableMetersFromEndPoint = acceptableMetersFromEndPoint;
+                    partMoveToLocation.checkXaxis = checkXaxis;
+                    partMoveToLocation.checkYaxis = checkYaxis;
+                    partMoveToLocation.checkZaxis = checkZaxis;
+                    partMoveToLocation.detachAndSnap = detachAndSnap;
+                    objectiveCommands = partMoveToLocation;
+                    break;
+                case AllObjetiveTypes.MoveFromLocation:
+                    InteractablePart partMoveFromLocation = subjectGameObject.GetComponent<InteractablePart>();
+                    if (partMoveFromLocation == null)
+                        partMoveFromLocation = subjectGameObject.AddComponent<InteractablePart>();
+                    partMoveFromLocation.ObjectiveType = PartObjectiveTypes.MoveFromLocation;
+                    partMoveFromLocation.onlyCompleteAfterRelease = onlyCompleteAfterRelease;
+                    objectiveCommands = partMoveFromLocation;
+                    break;
+                case AllObjetiveTypes.Interaction:
+                    InteractableObjective interactableObjective = subjectGameObject.GetComponent<InteractableObjective>();
+                    if (interactableObjective == null)
+                        interactableObjective = subjectGameObject.AddComponent<InteractableObjective>();
+                    interactableObjective.requireTriggerPress = requireTriggerPress;
+                    interactableObjective.hapticFeedback = hapticFeedback;
+                    objectiveCommands = interactableObjective;
+                    break;
+                case AllObjetiveTypes.PlayerMovement:
+                    MovementObjective movementObjective = subjectGameObject.GetComponent<MovementObjective>();
+                    if (movementObjective == null)
+                        movementObjective = subjectGameObject.AddComponent<MovementObjective>();
+                    movementObjective.vrCollider = vrCollider == null ? GameObject.Find("HeadCollider").GetComponent<Collider>() : vrCollider;
+                    movementObjective.teleportPoint = teleportPoint;
+                    movementObjective.colliderRadius = colliderRadius;
+                    movementObjective.colliderHeight = colliderHeight;
+                    objectiveCommands = movementObjective;
+                    break;
+                case AllObjetiveTypes.None:
+                default:
+                    Debug.Log("Objective " + title + " has no type.");
+                    objectiveCommands = null;
+                    break;
+            }
+        }
+    }
     private void OnChildObjectiveCompleted()
     {
         childObjectives[currentChildObjectiveIndex].CompletionEvent -= OnChildObjectiveCompleted;

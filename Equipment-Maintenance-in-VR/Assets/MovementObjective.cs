@@ -10,14 +10,12 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
 
     public Collider vrCollider;
     public TeleportPoint teleportPoint;
-    public Hand hand;
-    public SteamVR_Action_Boolean teleportAction;
+    public float colliderHeight = 2.0f;
+    public float colliderRadius = 0.3065555f;
     public event Action CompletionEvent;
     private CapsuleCollider teleporterCollider;
     private bool teleportActiveState = false;
     private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
-    private float colliderHeight = 2.0f;
-    private float colliderRadius = 0.3065555f;
 
 
     public void OnObjectiveReset()

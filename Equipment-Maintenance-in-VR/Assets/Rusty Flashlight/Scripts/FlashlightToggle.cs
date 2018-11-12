@@ -9,7 +9,7 @@ using Valve.VR.InteractionSystem;
 public class FlashlightToggle : MonoBehaviour
 {
     public GameObject lightGO; //light gameObject to work with
-    private bool isOn = true; //is flashlight on or off?
+    private bool isOn = false; //is flashlight on or off?
     public Hand left;
     public Hand right;
 

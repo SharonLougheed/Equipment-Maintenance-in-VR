@@ -5,6 +5,7 @@ using UnityEngine;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
 
+[RequireComponent(typeof(Interactable))]
 public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
     public event Action CompletionEvent;
     public bool requireTriggerPress = true;
@@ -31,7 +32,6 @@ public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
     {
         if (objectiveState == Objective.ObjectiveStates.InProgress && (!requireTriggerPress || SteamVR_Input._default.inActions.GrabPinch.GetStateDown(hand.handType)))
         {
-            //VibrateController(hand, 0.35f, 0.1f, 0.4f);
             if(hapticFeedback)
                 hand.TriggerHapticPulse(0.05f, 90.0f, 0.7f);
             OnObjectiveFinish();

@@ -9,8 +9,9 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
     public Transform gripAttachOffset;
     public Transform pinchAttachOffset;
-    public Objective.ObjectiveTypes ObjectiveType = Objective.ObjectiveTypes.MoveToLocation;
+    public Objective.PartObjectiveTypes ObjectiveType = Objective.PartObjectiveTypes.MoveToLocation;
     private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
+    [Header("Move To Location Settings")]
     public Transform endingLocation;
     public bool showEndPointOutline = true;
     public float acceptableDegreesFromEndPoint = 5f;
@@ -19,6 +20,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     public bool checkYaxis = true;
     public bool checkZaxis = true;
     public bool detachAndSnap = true;
+    [Header("Move From Location Settings")]
+    public bool onlyCompleteAfterRelease = true;
     public UnityEvent onAcceptablePlacement;
 
     private Material defaultOutlineMaterial;
@@ -259,7 +262,17 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }
     }
 
-
+    protected override void OnHandHoverBegin(Hand hand)
+    {
+        if (objectiveState == Objective.ObjectiveStates.InProgress)
+        {
+            base.OnHandHoverBegin(hand);
+        }
+        else if (objectiveState == Objective.ObjectiveStates.NotInProgress)
+        {
+            // outside of objective
+        }
+    }
     protected override void HandHoverUpdate(Hand hand)
     {
         if (attachEaseIn)
@@ -280,32 +293,41 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
         GrabTypes startingGrabType = hand.GetGrabStarting();
 
-        if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
+        if(objectiveState == Objective.ObjectiveStates.InProgress)
         {
-            // Attach this object to the hand
-            
-            if (startingGrabType == GrabTypes.Pinch)
+            // when in an objective 
+
+            if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
             {
-                hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, pinchAttachOffset);
+                // Attach this object to the hand
+
+                if (startingGrabType == GrabTypes.Pinch)
+                {
+                    hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, pinchAttachOffset);
+                }
+                else if (startingGrabType == GrabTypes.Grip)
+                {
+                    hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, gripAttachOffset);
+                }
+                else
+                {
+                    hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, base.attachmentOffset);
+                }
+
+                hand.HideGrabHint();
+                if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
+                {
+                    // Do nothing
+                }
+                else if (ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
+                {
+                    UpdatePlacementState(PlacementStates.DefaultHeld);
+                }
             }
-            else if (startingGrabType == GrabTypes.Grip)
-            {
-                hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, gripAttachOffset);
-            }
-            else
-            {
-                hand.AttachObject(gameObject, startingGrabType, base.attachmentFlags, base.attachmentOffset);
-            }
-            
-            hand.HideGrabHint();
-            if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
-            {
-                // Do nothing
-            }
-            else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
-            {
-                UpdatePlacementState(PlacementStates.DefaultHeld);
-            }
+        }
+        else
+        {
+            // when outside of an objective
         }
     }
 
@@ -443,7 +465,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             //hand.HoverUnlock(interactable);
             if (objectiveState == Objective.ObjectiveStates.InProgress)
             {
-                if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
+                if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
                 {
                     // First test if they are at least overlapping
                     if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
@@ -469,7 +491,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                         UpdatePlacementState(PlacementStates.DefaultPlaced);
                     }
                 }
-                else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
+                else if (ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
                 {
                     // For now dropping it anywhere implies a successful movement away from a location
                     OnAcceptablePlacement();
@@ -490,7 +512,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         {
             if (objectiveState == Objective.ObjectiveStates.InProgress)
             {
-                if (ObjectiveType == Objective.ObjectiveTypes.MoveToLocation)
+                if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
                 {
                     // First check if they are at least overlapping
                     if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
@@ -536,7 +558,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                         UpdatePlacementState(PlacementStates.DefaultHeld);
                     }
                 }
-                else if (ObjectiveType == Objective.ObjectiveTypes.MoveFromLocation)
+                else if (ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
                 {
                     // Do nothing
                 }
