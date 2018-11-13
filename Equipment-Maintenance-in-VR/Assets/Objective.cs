@@ -135,6 +135,7 @@ public class Objective : MonoBehaviour {
                     if (partMoveToLocation == null)
                         partMoveToLocation = subjectGameObject.AddComponent<InteractablePart>();
                     partMoveToLocation.ObjectiveType = PartObjectiveTypes.MoveToLocation;
+                    partMoveToLocation.endingLocation = endingLocation;
                     partMoveToLocation.showEndPointOutline = showEndPointOutline;
                     partMoveToLocation.acceptableDegreesFromEndPoint = acceptableDegreesFromEndPoint;
                     partMoveToLocation.acceptableMetersFromEndPoint = acceptableMetersFromEndPoint;

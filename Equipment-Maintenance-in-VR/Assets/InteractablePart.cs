@@ -57,7 +57,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     void Start () {
         interactable.highlightOnHover = false;
         SetStatic(gameObject, false);
-        InitializeEndPoint();
     }
 
     
@@ -112,6 +111,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             Destroy(endPointGameObject.GetComponent<Rigidbody>());
             Destroy(endPointGameObject.GetComponent<Throwable>());
             Destroy(endPointGameObject.GetComponent<VelocityEstimator>());
+            Destroy(endPointGameObject.GetComponent<InteractableObjective>());
             Destroy(endPointGameObject.GetComponent<Interactable>());
 
             endPointObjectList = GetAllGameObjectsAtOrBelow(endPointGameObject);
@@ -132,6 +132,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 SetEndPointVisibility(false);
             }
             endPointGameObject.SetActive(endPointActiveState);
+            //Debug.Log("endpoint: " + endingLocation.gameObject.name);
         }
     }
 
@@ -594,6 +595,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         interactable.highlightOnHover = true;
         if (showEndPointOutline)
         {
+            InitializeEndPoint();
             endPointActiveState = true;
             if (endPointGameObject != null)
             {

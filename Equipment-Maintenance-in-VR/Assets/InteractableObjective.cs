@@ -10,11 +10,15 @@ public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
     public event Action CompletionEvent;
     public bool requireTriggerPress = true;
     public bool hapticFeedback = true;
+    private bool highlightOnHover = false;
+    
     // private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     public Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     public void OnObjectiveFinish()
     {
         objectiveState = Objective.ObjectiveStates.NotInProgress;
+        highlightOnHover = false;
+        gameObject.GetComponent<Interactable>().highlightOnHover = false;
         CompletionEvent();
     }
 
@@ -26,6 +30,8 @@ public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
     public void OnObjectiveStart()
     {
         objectiveState = Objective.ObjectiveStates.InProgress;
+        highlightOnHover = true;
+        gameObject.GetComponent<Interactable>().highlightOnHover = true;
     }
 
     private void HandHoverUpdate(Hand hand)
@@ -40,8 +46,8 @@ public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
 
     // Use this for initialization
     void Start () {
-		
-	}
+        gameObject.GetComponent<Interactable>().highlightOnHover = highlightOnHover;
+    }
 	
 	// Update is called once per frame
 	void Update () {
