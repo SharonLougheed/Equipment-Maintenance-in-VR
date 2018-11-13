@@ -55,6 +55,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
 
     void Start () {
+        interactable.highlightOnHover = false;
         SetStatic(gameObject, false);
         InitializeEndPoint();
     }
@@ -432,7 +433,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         hand.HoverUnlock(null);
 
         base.rigidbody.interpolation = hadInterpolation;
-
+        Debug.Log("State: " + currentPlacementState);
         if (currentPlacementState != PlacementStates.AcceptablePlaced)
         {
             Vector3 velocity;
@@ -588,8 +589,9 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     }
 
     public void OnObjectiveStart()
-    {
+    {   
         objectiveState = Objective.ObjectiveStates.InProgress;
+        interactable.highlightOnHover = true;
         if (showEndPointOutline)
         {
             endPointActiveState = true;
@@ -610,5 +612,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     {
         CompletionEvent();
         objectiveState = Objective.ObjectiveStates.NotInProgress;
+        interactable.highlightOnHover = false;
     }
 }
