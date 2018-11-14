@@ -12,7 +12,7 @@ public class Objective : MonoBehaviour {
     public string description;
     public bool isCompleted = false;
     public enum PartObjectiveTypes {MoveToLocation, MoveFromLocation, None};
-    public enum AllObjetiveTypes { None, MoveToLocation, MoveFromLocation, Interaction, PlayerMovement};
+    public enum AllObjetiveTypes { None, MoveToLocation, MoveFromLocation, Interaction, PlayerMovement, ToolMotion};
     public enum ObjectiveStates { InProgress, NotInProgress };
     [Tooltip("Select the GameObject that is the subject of this objective")]
     public GameObject subjectGameObject;
@@ -37,6 +37,11 @@ public class Objective : MonoBehaviour {
     public TeleportPoint teleportPoint;
     public float colliderHeight = 2.0f;
     public float colliderRadius = 0.3065555f;
+    [Header("Tool Motion Settings")]
+    public Transform rotationPoint;
+    public ToolObjective.RotationDirections rotationDirection = ToolObjective.RotationDirections.Clockwise;
+    public float requiredDegreesOfRotation = 90;
+    public int numberOfRotatations = 1;
 
     [Tooltip("Actions applied as the objective starts")]
     public UnityEvent PreConditions;
@@ -170,6 +175,16 @@ public class Objective : MonoBehaviour {
                     movementObjective.colliderRadius = colliderRadius;
                     movementObjective.colliderHeight = colliderHeight;
                     objectiveCommands = movementObjective;
+                    break;
+                case AllObjetiveTypes.ToolMotion:
+                    ToolObjective toolObjective = subjectGameObject.GetComponent<ToolObjective>();
+                    if (toolObjective == null)
+                        toolObjective = subjectGameObject.AddComponent<ToolObjective>();
+                    toolObjective.rotationPoint = rotationPoint;
+                    toolObjective.rotationDirection = rotationDirection;
+                    toolObjective.requiredDegreesOfRotation = requiredDegreesOfRotation;
+                    toolObjective.numberOfRotatations = numberOfRotatations;
+                    objectiveCommands = toolObjective;
                     break;
                 case AllObjetiveTypes.None:
                 default:
