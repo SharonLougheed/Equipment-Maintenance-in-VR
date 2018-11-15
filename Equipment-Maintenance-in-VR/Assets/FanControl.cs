@@ -27,7 +27,7 @@ public class FanControl : MonoBehaviour {
             // seems like FanStartUp state, then FanSpin state, then repeat.
             // our goal is to repeat on FanSpin, not coming back to FanStartUp.
             if(!FanSound.isPlaying)
-                FanSound.PlayOneShot(FanStarting);
+                FanSound.PlayOneShot(FanStarting, 0.7f);
             fanAnim.SetBool("FanOn", true);
             //PlaySound(FanSound, FanStarting);
             //fanAnim.Play("FanStartUp");
@@ -41,7 +41,7 @@ public class FanControl : MonoBehaviour {
         {
             //FanSound.PlayOneShot(FanSpinning);
             if(!FanSound.isPlaying)
-                FanSound.PlayOneShot(FanSpinning);
+                FanSound.PlayOneShot(FanSpinning, 0.7f);
             //PlaySound(FanSound, FanSpinning);
         }
         
@@ -50,7 +50,7 @@ public class FanControl : MonoBehaviour {
         {
             //if (!FanSound.isPlaying)
             FanSound.Stop();
-            FanSound.PlayOneShot(FanStopping);
+            FanSound.PlayOneShot(FanStopping, 0.7f);
             fanAnim.SetBool("FanOn", false);
             //PlaySound(FanSound, FanStopping);
             //fanAnim.Play("FanShutOff");
@@ -58,9 +58,13 @@ public class FanControl : MonoBehaviour {
         }
 	}
 
-    IEnumerator PlaySound(AudioSource source, AudioClip clip)
+    public void ChangeFanState(bool turnFanOn)
     {
-        source.PlayOneShot(clip);
-        yield return new WaitForSeconds(clip.length);
+        turnOn = turnFanOn;
+    }
+
+    public void ToggleFanState()
+    {
+        turnOn = !turnOn;
     }
 }

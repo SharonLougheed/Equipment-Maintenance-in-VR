@@ -5,12 +5,14 @@ using UnityEngine;
 public class AudioQueue : MonoBehaviour {
 
     public AudioSource audioSource;
+    public bool muteOnStart = true;
     private Queue<AudioClip> audioClipsQueue = new Queue<AudioClip>();
     private bool isPaused = false;
+
     
     // Use this for initialization
     void Start () {
-
+        audioSource.mute = muteOnStart;
     }
 	
 	// Update is called once per frame
