@@ -21,8 +21,8 @@ public class Objective : MonoBehaviour {
     [Header("Move To Location Settings")]
     public Transform endingLocation;
     public bool showEndPointOutline = true;
-    public float acceptableDegreesFromEndPoint = 5f;
-    public float acceptableMetersFromEndPoint = 0.1f;
+    public float acceptableDegreesFromEndPoint = 20f;
+    public float acceptableMetersFromEndPoint = 1f;
     public bool checkXaxis = true;
     public bool checkYaxis = true;
     public bool checkZaxis = true;
@@ -42,6 +42,7 @@ public class Objective : MonoBehaviour {
     public ToolObjective.RotationDirections rotationDirection = ToolObjective.RotationDirections.Clockwise;
     public float requiredDegreesOfRotation = 90;
     public int numberOfRotatations = 1;
+    public float rotationSpeed = 2;
 
     [Tooltip("Actions applied as the objective starts")]
     public UnityEvent PreConditions;
@@ -126,7 +127,6 @@ public class Objective : MonoBehaviour {
                 OnObjectiveCompleted();
             }
         }
-        
     }
 
     private void ApplyObjectiveSettings()
@@ -184,6 +184,7 @@ public class Objective : MonoBehaviour {
                     toolObjective.rotationDirection = rotationDirection;
                     toolObjective.requiredDegreesOfRotation = requiredDegreesOfRotation;
                     toolObjective.numberOfRotatations = numberOfRotatations;
+                    toolObjective.rotationSpeed = rotationSpeed;
                     objectiveCommands = toolObjective;
                     break;
                 case AllObjetiveTypes.None:

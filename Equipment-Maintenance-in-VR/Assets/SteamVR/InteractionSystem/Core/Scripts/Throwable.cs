@@ -146,7 +146,7 @@ namespace Valve.VR.InteractionSystem
 
             attached = true;
 
-			onPickUp.Invoke();
+			//onPickUp.Invoke();
 
 			hand.HoverLock( interactable );
             

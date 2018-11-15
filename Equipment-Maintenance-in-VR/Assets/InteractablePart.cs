@@ -112,6 +112,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             Destroy(endPointGameObject.GetComponent<Throwable>());
             Destroy(endPointGameObject.GetComponent<VelocityEstimator>());
             Destroy(endPointGameObject.GetComponent<InteractableObjective>());
+            Destroy(endPointGameObject.GetComponent<ToolObjective>());
             Destroy(endPointGameObject.GetComponent<Interactable>());
 
             endPointObjectList = GetAllGameObjectsAtOrBelow(endPointGameObject);
@@ -165,7 +166,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
     private void OnAcceptablePlacement()
     {
-        onAcceptablePlacement.Invoke();
+        //onAcceptablePlacement.Invoke();
     }
 
 
@@ -429,7 +430,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     {
         attached = false;
 
-        onDetachFromHand.Invoke();
+        //onDetachFromHand.Invoke();
 
         hand.HoverUnlock(null);
 
@@ -593,16 +594,26 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     {   
         objectiveState = Objective.ObjectiveStates.InProgress;
         interactable.highlightOnHover = true;
-        if (showEndPointOutline)
+        if(ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
-            InitializeEndPoint();
-            endPointActiveState = true;
-            if (endPointGameObject != null)
+            if (showEndPointOutline)
             {
-                endPointGameObject.SetActive(endPointActiveState);
-                SetEndPointVisibility(true);
+                InitializeEndPoint();
+                endPointActiveState = true;
+                if (endPointGameObject != null)
+                {
+                    endPointGameObject.SetActive(endPointActiveState);
+                    SetEndPointVisibility(true);
+                }
             }
         }
+        else if(ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
+        {
+            SetEndPointVisibility(false);
+            rigidbody.isKinematic = false;
+            rigidbody.useGravity = false;
+        }
+        
     }
 
     public void OnObjectiveReset()
@@ -615,5 +626,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         CompletionEvent();
         objectiveState = Objective.ObjectiveStates.NotInProgress;
         interactable.highlightOnHover = false;
+        SetEndPointVisibility(false);
     }
 }

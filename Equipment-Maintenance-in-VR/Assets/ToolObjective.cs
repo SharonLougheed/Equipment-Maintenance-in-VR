@@ -13,8 +13,9 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
     public RotationDirections rotationDirection = RotationDirections.Clockwise;
     public int numberOfRotatations = 1;
     public float requiredDegreesOfRotation = 90;
-
-    private Transform startingTransform;
+    public float rotationSpeed = 2;
+    private Vector3 startingPosition;
+    private Quaternion startingRotation;
     private float totalDegreesRotated = 0;
     public Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     public event Action CompletionEvent;
@@ -26,8 +27,9 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
     public void OnObjectiveFinish()
     {
         objectiveState = Objective.ObjectiveStates.NotInProgress;
-        highlightOnHover = false;
-        GetComponent<Interactable>().highlightOnHover = false;
+        //highlightOnHover = false;
+        //GetComponent<Interactable>().highlightOnHover = false;
+        CompletionEvent();
     }
 
     public void OnObjectiveReset()
@@ -44,7 +46,8 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
 
     void Start () {
         dummyObject = new GameObject();
-        startingTransform = transform;
+        startingPosition = transform.position;
+        startingRotation = transform.rotation;
         GetComponent<Interactable>().highlightOnHover = highlightOnHover;
         foreach (Transform child in transform)
         {
@@ -96,11 +99,12 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
                     if (angle > 1)
                     {
                         if (cross.y > 0) angle = -angle;
-                        Debug.Log("Angle between hand and tool: " + angle);
-                        transform.RotateAround(rotationPoint.position, Vector3.up, angle * Time.deltaTime);
-                        totalDegreesRotated += angle * Time.deltaTime;
+                        Debug.Log("Angle between hand and tool: " + angle + " of " + requiredDegreesOfRotation + " " + rotationDirection.ToString());
+                        transform.RotateAround(rotationPoint.position, Vector3.up, angle * Time.deltaTime * rotationSpeed);
+                        totalDegreesRotated += angle * Time.deltaTime * rotationSpeed;
                     }
-                    if (totalDegreesRotated < requiredDegreesOfRotation)
+                    if ((rotationDirection == RotationDirections.Clockwise &&  totalDegreesRotated < requiredDegreesOfRotation)
+                        || (rotationDirection == RotationDirections.Counterclockwise && totalDegreesRotated > requiredDegreesOfRotation))
                     {
                         
                     }
@@ -110,14 +114,18 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
                         if(rotationCount < numberOfRotatations)
                         {
                             // reset position to start
+
                             totalDegreesRotated = 0;
                             isGrabbingTool = false;
                             finishedRotationRound = true;
-                            transform.position = startingTransform.position;
-                            transform.rotation = startingTransform.rotation;
+                            transform.position = startingPosition;
+                            transform.rotation = startingRotation;
                         }
                         else
                         {
+                            isGrabbingTool = false;
+                            hand.HoverUnlock(GetComponent<Interactable>());
+                            hand.DetachObject(dummyObject);
                             OnObjectiveFinish();
                         }
                         
@@ -126,7 +134,6 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
                 }
             }
         }
-        //Debug.Log(Valve.VR.SteamVR_Input._default.inActions.GrabPinch.GetStateDown(hand.handType));
     }
 
     void OnHandHoverEnd(Hand hand)
@@ -136,73 +143,5 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
 	// Update is called once per frame
 	void Update () {
 
-        //if (rotationPoint != null)
-        //{
-        //    Vector3 handPosition = hand.position;
-        //    Vector3 toolPosition = transform.position;
-        //    handPosition.y= toolPosition.y;
-        //    Vector3 handToTool = handPosition - toolPosition;
-        //    Debug.DrawRay(handPosition, -handToTool);
-        //    float angle = Vector3.Angle(handToTool, -transform.right);
-        //    Vector3 cross = Vector3.Cross(handToTool, -transform.right);
-        //    if(totalDegreesRotated < requiredDegreesOfRotation)
-        //    if(angle > 1)
-        //    {
-        //        if (cross.y > 0) angle = -angle;
-        //        Debug.Log("Angle between hand and tool: " + angle);
-
-        //        transform.RotateAround(rotationPoint.position, Vector3.up, angle * Time.deltaTime);
-        //        totalDegreesRotated += angle * Time.deltaTime;
-        //    }
-        //}
-
-        //if (true || objectiveState == Objective.ObjectiveStates.InProgress)
-        //{
-        //    if(handRef == null)
-        //    {
-        //        return;
-        //    }
-
-        //    if (!isGrabbingTool && Valve.VR.SteamVR_Input._default.inActions.GrabPinch.GetStateDown(handRef.handType))
-        //    {
-        //        // start to grab the tool
-        //        Debug.Log("Starting Grab");
-        //        handRef.HoverLock(GetComponent<Interactable>());
-        //        isGrabbingTool = true;
-
-        //    }
-        //    else if (isGrabbingTool && !Valve.VR.SteamVR_Input._default.inActions.GrabPinch.GetStateDown(handRef.handType))
-        //    {
-        //        // was grabbing and is letting go now
-        //        Debug.Log("Ending Grab");
-        //        isGrabbingTool = false;
-        //        handRef.HoverUnlock(GetComponent<Interactable>());
-        //    }
-
-        //    if (isGrabbingTool && Valve.VR.SteamVR_Input._default.inActions.GrabPinch.GetStateDown(handRef.handType))
-        //    {
-        //        // is grabbing 
-        //        Debug.Log("Grabbing");
-        //        if (rotationPoint != null)
-        //        {
-        //            Vector3 handPosition = handRef.transform.position;
-        //            Vector3 toolPosition = transform.position;
-        //            handPosition.y = toolPosition.y;
-        //            Vector3 handToTool = handPosition - toolPosition;
-        //            Debug.DrawRay(handPosition, -handToTool);
-        //            float angle = Vector3.Angle(handToTool, -transform.right);
-        //            Vector3 cross = Vector3.Cross(handToTool, -transform.right);
-        //            if (totalDegreesRotated < requiredDegreesOfRotation)
-        //                if (angle > 1)
-        //                {
-        //                    if (cross.y > 0) angle = -angle;
-        //                    Debug.Log("Angle between hand and tool: " + angle);
-
-        //                    transform.RotateAround(rotationPoint.position, Vector3.up, angle * Time.deltaTime);
-        //                    totalDegreesRotated += angle * Time.deltaTime;
-        //                }
-        //        }
-        //    }
-        //}
     }
 }
