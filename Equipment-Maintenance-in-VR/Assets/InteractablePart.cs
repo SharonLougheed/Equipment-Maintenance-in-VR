@@ -42,7 +42,9 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
     private bool endPointActiveState = false;
-    
+    private bool highlightOnHover = false;
+
+
     public event Action CompletionEvent;
 
     protected override void Awake()
@@ -113,6 +115,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             Destroy(endPointGameObject.GetComponent<VelocityEstimator>());
             Destroy(endPointGameObject.GetComponent<InteractableObjective>());
             Destroy(endPointGameObject.GetComponent<ToolObjective>());
+            Destroy(endPointGameObject.GetComponent<InteractableHoverEvents>());
             Destroy(endPointGameObject.GetComponent<Interactable>());
 
             endPointObjectList = GetAllGameObjectsAtOrBelow(endPointGameObject);
@@ -189,13 +192,17 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         {
             float angle = Math.Abs(rot1.eulerAngles.x - rot2.eulerAngles.x) % 360;
             angle = angle > 180 ? 360 - angle : angle;
+            //Debug.Log("X angle: " + angle);
+            angle = angle % 90;
             if (angle > limit)
                 return false;
         }
-        if (checkYaxis)
+        if (false && checkYaxis)
         {
             float angle = Math.Abs(rot1.eulerAngles.y - rot2.eulerAngles.y) % 360;
             angle = angle > 180 ? 360 - angle : angle;
+            angle = angle % 90;
+            //Debug.Log("Y angle: " + angle);
             if (angle > limit)
                 return false;
         }
@@ -203,6 +210,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         {
             float angle = Math.Abs(rot1.eulerAngles.z - rot2.eulerAngles.z) % 360;
             angle = angle > 180 ? 360 - angle : angle;
+            angle = angle % 90;
+            //Debug.Log("Z angle: " + angle);
             if (angle > limit)
                 return false;
         }
@@ -225,6 +234,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         selfBoundsExpired = true;
         selfCenter = selfGroupBounds.center;
         otherCenter = otherGroupBounds.center;
+        Debug.DrawRay(selfCenter, otherCenter);
+
         //Debug.Log("Distance: " + Vector3.Distance(selfCenter, otherCenter));
         return Vector3.Distance(selfCenter, otherCenter) <= limit ? true : false;
     }
@@ -593,6 +604,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     public void OnObjectiveStart()
     {   
         objectiveState = Objective.ObjectiveStates.InProgress;
+        highlightOnHover = true;
         interactable.highlightOnHover = true;
         if(ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
@@ -610,7 +622,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         else if(ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
         {
             SetEndPointVisibility(false);
-            rigidbody.isKinematic = false;
+            rigidbody.isKinematic = true;
             rigidbody.useGravity = false;
         }
         
