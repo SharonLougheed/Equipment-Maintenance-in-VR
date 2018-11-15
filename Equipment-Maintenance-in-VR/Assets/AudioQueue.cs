@@ -5,12 +5,11 @@ using UnityEngine;
 public class AudioQueue : MonoBehaviour {
 
     public AudioSource audioSource;
-    private Queue<AudioClip> audioClipsQueue;
+    private Queue<AudioClip> audioClipsQueue = new Queue<AudioClip>();
     private bool isPaused = false;
     
     // Use this for initialization
     void Start () {
-        audioClipsQueue = new Queue<AudioClip>();
 
     }
 	

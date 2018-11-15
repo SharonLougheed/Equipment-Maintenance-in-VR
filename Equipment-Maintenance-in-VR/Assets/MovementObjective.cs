@@ -47,7 +47,8 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
         teleportPoint.markerActive = false;
         teleportPoint.gameObject.SetActive(false);
         objectiveState = Objective.ObjectiveStates.NotInProgress;
-        CompletionEvent();
+        if(CompletionEvent != null)
+            CompletionEvent();
     }
 
     void Start()
