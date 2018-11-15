@@ -23,6 +23,7 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
     private bool finishedRotationRound = false;
     private bool highlightOnHover = true;
     private int rotationCount = 0;
+    private float lastRotationAngle = 0;
     private GameObject dummyObject;
     public void OnObjectiveFinish()
     {
@@ -42,6 +43,14 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
         highlightOnHover = true;
         GetComponent<Interactable>().highlightOnHover = true;
         objectiveState = Objective.ObjectiveStates.InProgress;
+        if (rotationDirection == RotationDirections.Clockwise && requiredDegreesOfRotation < 0)
+        {
+            requiredDegreesOfRotation *= -1;
+        }
+        else if (rotationDirection == RotationDirections.Counterclockwise && requiredDegreesOfRotation > 0)
+        {
+            requiredDegreesOfRotation *= -1;
+        }
     }
 
     void Start () {
@@ -94,19 +103,19 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
                     handPosition.y = toolPosition.y;
                     Vector3 handToTool = handPosition - toolPosition;
                     Debug.DrawRay(handPosition, -handToTool);
-                    float angle = Vector3.Angle(handToTool, -transform.right);
-                    Vector3 cross = Vector3.Cross(handToTool, -transform.right);
-                    if (angle > 1)
+
+                    float angle = Vector3.SignedAngle(handToTool, transform.right, Vector3.up);
+                    
+                    if (Math.Abs(angle) > 1  && ((rotationDirection == RotationDirections.Clockwise && angle > 0) || (rotationDirection == RotationDirections.Counterclockwise && angle < 0)))
                     {
-                        if (cross.y > 0) angle = -angle;
-                        Debug.Log("Angle between hand and tool: " + angle + " of " + requiredDegreesOfRotation + " " + rotationDirection.ToString());
                         transform.RotateAround(rotationPoint.position, Vector3.up, angle * Time.deltaTime * rotationSpeed);
                         totalDegreesRotated += angle * Time.deltaTime * rotationSpeed;
                     }
+                    //Debug.Log("last: " + lastRotationAngle + "angle: " +  angle + " ("+ totalDegreesRotated +" of " + requiredDegreesOfRotation + ")");
                     if ((rotationDirection == RotationDirections.Clockwise &&  totalDegreesRotated < requiredDegreesOfRotation)
                         || (rotationDirection == RotationDirections.Counterclockwise && totalDegreesRotated > requiredDegreesOfRotation))
                     {
-                        
+
                     }
                     else
                     {
