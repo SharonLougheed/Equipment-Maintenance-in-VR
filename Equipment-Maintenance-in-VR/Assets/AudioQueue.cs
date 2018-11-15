@@ -29,10 +29,10 @@ public class AudioQueue : MonoBehaviour {
         audioClipsQueue.Enqueue(audioClip);
     }
 
-    public void PlayOneShot(AudioClip audioClip)
+    public void PlayOneShot(AudioClip audioClip, float volume = 1.0f)
     {
         if (audioSource != null)
-            audioSource.PlayOneShot(audioClip);
+            audioSource.PlayOneShot(audioClip, volume);
     }
 
     public void PauseQueue()
