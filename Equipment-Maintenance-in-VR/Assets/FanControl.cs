@@ -6,43 +6,61 @@ public class FanControl : MonoBehaviour {
 
     public bool turnOn = false;
     private bool isSpinning = false;
-    Animator fanAnim;
-    public bool turnOff = false;
+    public Animator fanAnim;
+    public AudioSource FanSound;
+    public AudioClip FanStarting;
+    public AudioClip FanSpinning;
+    public AudioClip FanStopping;
 
-	// Use this for initialization
+
 	void Start () {
         fanAnim = GetComponent<Animator>();
-        //fanAnim.SetTrigger("FanStandby");
-        
+        FanSound = GetComponent<AudioSource>();
 	}
-	
-	// Update is called once per frame
+
+    bool playSound = true;
 	void Update () {
 
-		if(turnOn)
+		if(turnOn && !isSpinning)
         {
             // TODO
             // seems like FanStartUp state, then FanSpin state, then repeat.
             // our goal is to repeat on FanSpin, not coming back to FanStartUp.
-
+            if(!FanSound.isPlaying)
+                FanSound.PlayOneShot(FanStarting);
+            fanAnim.SetBool("FanOn", true);
+            //PlaySound(FanSound, FanStarting);
             //fanAnim.Play("FanStartUp");
             //fanAnim.Play("FanSpin");
-            fanAnim.ResetTrigger("FanOff");
-            fanAnim.SetTrigger("FanOn");
+            //fanAnim.SetTrigger("FanOn");
             isSpinning = true;
         }
 
+        
         if(isSpinning)
         {
-            //fanAnim.Play("FanSpin");
+            //FanSound.PlayOneShot(FanSpinning);
+            if(!FanSound.isPlaying)
+                FanSound.PlayOneShot(FanSpinning);
+            //PlaySound(FanSound, FanSpinning);
         }
+        
 
-        if(turnOff)
+        if(!turnOn && isSpinning)
         {
-            fanAnim.ResetTrigger("FanOn");
-            fanAnim.SetTrigger("FanOff");
+            //if (!FanSound.isPlaying)
+            FanSound.Stop();
+            FanSound.PlayOneShot(FanStopping);
+            fanAnim.SetBool("FanOn", false);
+            //PlaySound(FanSound, FanStopping);
             //fanAnim.Play("FanShutOff");
             isSpinning = false;
         }
 	}
+
+    IEnumerator PlaySound(AudioSource source, AudioClip clip)
+    {
+        source.PlayOneShot(clip);
+        yield return new WaitForSeconds(clip.length);
+    }
 }
