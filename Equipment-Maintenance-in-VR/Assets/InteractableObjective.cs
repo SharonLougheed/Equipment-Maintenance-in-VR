@@ -12,13 +12,17 @@ public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
     public bool hapticFeedback = true;
     private bool highlightOnHover = false;
     private GameObject dummyObject;
-    // private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     public Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
+
     public void OnObjectiveFinish()
     {
         objectiveState = Objective.ObjectiveStates.NotInProgress;
-        //highlightOnHover = false;
-        //gameObject.GetComponent<Interactable>().highlightOnHover = false;
+        highlightOnHover = false;
+        gameObject.GetComponent<Interactable>().highlightOnHover = false;
+        //if (hand.AttachedObjects.Count > 0 && HandHoverUpdate.AttachedObjects.Contains(dummyObject))
+        //{
+        //    hand.DetachObject(dummyObject);
+        //}
         CompletionEvent();
     }
 

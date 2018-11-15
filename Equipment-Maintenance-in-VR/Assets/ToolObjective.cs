@@ -23,13 +23,12 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
     private bool finishedRotationRound = false;
     private bool highlightOnHover = true;
     private int rotationCount = 0;
-    private float lastRotationAngle = 0;
     private GameObject dummyObject;
     public void OnObjectiveFinish()
     {
         objectiveState = Objective.ObjectiveStates.NotInProgress;
-        //highlightOnHover = false;
-        //GetComponent<Interactable>().highlightOnHover = false;
+        highlightOnHover = false;
+        GetComponent<Interactable>().highlightOnHover = false;
         CompletionEvent();
     }
 
@@ -40,6 +39,10 @@ public class ToolObjective : MonoBehaviour, IObjectiveCommands {
 
     public void OnObjectiveStart()
     {
+        rotationCount = 0;
+        startingPosition = transform.position;
+        startingRotation = transform.rotation;
+        totalDegreesRotated = 0;
         highlightOnHover = true;
         GetComponent<Interactable>().highlightOnHover = true;
         objectiveState = Objective.ObjectiveStates.InProgress;

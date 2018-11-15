@@ -207,6 +207,7 @@ public class Objective : MonoBehaviour {
     {
         isCompleted = true;
         Debug.Log("Completed objective " + title);
+        DestroyHighlights();
         if (objectiveCommands != null)
         {
             objectiveCommands.CompletionEvent -= OnObjectiveCompleted;
@@ -292,5 +293,17 @@ public class Objective : MonoBehaviour {
 
         }
         return objectiveList;
+    }
+
+    void DestroyHighlights()
+    {
+        GameObject[] rootObjects = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach(var obj in rootObjects)
+        {
+            if(obj.name == "Highlighter")
+            {
+                Destroy(obj);
+            }
+        }
     }
 }
