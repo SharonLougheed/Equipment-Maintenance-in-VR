@@ -12,6 +12,7 @@ public class AudioQueue : MonoBehaviour {
     
     // Use this for initialization
     void Start () {
+        audioSource.volume = 0.5f;
         audioSource.mute = muteOnStart;
     }
 	
@@ -26,6 +27,12 @@ public class AudioQueue : MonoBehaviour {
 
     public void AddAudioClipToQueue(AudioClip audioClip)
     {
+        audioClipsQueue.Enqueue(audioClip);
+    }
+
+    public void AddAudioClipToQueue(AudioClip audioClip, bool stopCurrentAudio = false)
+    {
+
         audioClipsQueue.Enqueue(audioClip);
     }
 
@@ -45,5 +52,22 @@ public class AudioQueue : MonoBehaviour {
     {
         isPaused = false;
         audioSource.UnPause();
+    }
+
+    public void setVolume(float vol)
+    {
+        if(audioSource != null)
+        {
+            audioSource.volume = vol;
+        }
+    }
+
+    public void ClearAudioQueue()
+    {
+        if (audioSource != null)
+        {
+            audioClipsQueue.Clear();
+        }
+
     }
 }

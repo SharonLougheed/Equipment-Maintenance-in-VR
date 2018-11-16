@@ -325,7 +325,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 }
                 else if (ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
                 {
-                    UpdatePlacementState(PlacementStates.DefaultHeld);
+                    UpdatePlacementState(PlacementStates.DefaultPlaced);
                 }
             }
         }
@@ -349,8 +349,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 case PlacementStates.UnacceptablePlaced:
                 case PlacementStates.DefaultPlaced:
                     SetAllTriggers(gameObject, false);
-                    rigidbody.isKinematic = requireHandAttached ? isKinematicAfter : isKinematicBefore;
-                    rigidbody.useGravity = requireHandAttached ? useGravityAfter : useGravityBefore;
+                    rigidbody.isKinematic = requireHandAttached ?  isKinematicBefore : isKinematicAfter;
+                    rigidbody.useGravity = requireHandAttached ? useGravityBefore : useGravityAfter;
                     break;
                 case PlacementStates.AcceptablePlaced:
                     rigidbody.isKinematic = isKinematicAfter;
@@ -499,8 +499,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 {
                     // For now dropping it anywhere implies a successful movement away from a location
                     OnAcceptablePlacement();
+                    UpdatePlacementState(PlacementStates.AcceptablePlaced);
                     OnObjectiveFinish();
-                    UpdatePlacementState(PlacementStates.DefaultPlaced);
                 }
             }
             else
@@ -570,7 +570,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
     void Update()
     {
-        if(objectiveState == Objective.ObjectiveStates.InProgress && endPointGameObject != null && !base.attached && requireHandAttached && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+        if(objectiveState == Objective.ObjectiveStates.InProgress && endPointGameObject != null && !base.attached && !requireHandAttached && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
                         && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
         {
             UpdatePlacementState(PlacementStates.AcceptablePlaced);
@@ -599,6 +599,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         highlightOnHover = true;
         interactable.highlightOnHover = true;
         isTouchingEndPoint = false;
+
         currentPlacementState = PlacementStates.DefaultPlaced;
         if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
