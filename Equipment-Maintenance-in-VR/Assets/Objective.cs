@@ -20,13 +20,18 @@ public class Objective : MonoBehaviour {
     public AllObjetiveTypes objectiveType = AllObjetiveTypes.None;
     [Header("Move To Location Settings")]
     public Transform endingLocation;
+    public bool requireColliderOverlap = true;
+    public bool useGravityBefore = true;
+    public bool isKinematicBefore = false;
     public bool showEndPointOutline = true;
+    public bool useGravityAfter = false;
+    public bool isKinematicAfter = true;
     public float acceptableDegreesFromEndPoint = 20f;
     public float acceptableMetersFromEndPoint = 1f;
     public bool checkXaxis = true;
     public bool checkYaxis = true;
     public bool checkZaxis = true;
-    public bool detachAndSnap = true;
+    public bool requireHandAttached = true;
     [Header("Move From Location Settings")]
     public bool onlyCompleteAfterRelease = true;
     [Header("Interaction Settings")]
@@ -142,12 +147,18 @@ public class Objective : MonoBehaviour {
                     partMoveToLocation.ObjectiveType = PartObjectiveTypes.MoveToLocation;
                     partMoveToLocation.endingLocation = endingLocation;
                     partMoveToLocation.showEndPointOutline = showEndPointOutline;
+                    partMoveToLocation.useGravityBefore = useGravityBefore;
+                    partMoveToLocation.isKinematicBefore = isKinematicBefore;
+                    partMoveToLocation.isKinematicAfter = isKinematicAfter;
+                    partMoveToLocation.useGravityAfter = useGravityAfter;
+
                     partMoveToLocation.acceptableDegreesFromEndPoint = acceptableDegreesFromEndPoint;
                     partMoveToLocation.acceptableMetersFromEndPoint = acceptableMetersFromEndPoint;
+                    partMoveToLocation.requireColliderOverlap = requireColliderOverlap;
                     partMoveToLocation.checkXaxis = checkXaxis;
                     partMoveToLocation.checkYaxis = checkYaxis;
                     partMoveToLocation.checkZaxis = checkZaxis;
-                    partMoveToLocation.detachAndSnap = detachAndSnap;
+                    partMoveToLocation.requireHandAttached = requireHandAttached;
                     objectiveCommands = partMoveToLocation;
                     break;
                 case AllObjetiveTypes.MoveFromLocation:
@@ -155,7 +166,21 @@ public class Objective : MonoBehaviour {
                     if (partMoveFromLocation == null)
                         partMoveFromLocation = subjectGameObject.AddComponent<InteractablePart>();
                     partMoveFromLocation.ObjectiveType = PartObjectiveTypes.MoveFromLocation;
-                    partMoveFromLocation.onlyCompleteAfterRelease = onlyCompleteAfterRelease;
+                    partMoveFromLocation.endingLocation = endingLocation;
+                    partMoveFromLocation.showEndPointOutline = showEndPointOutline;
+                    partMoveFromLocation.useGravityBefore = useGravityBefore;
+                    partMoveFromLocation.isKinematicBefore = isKinematicBefore;
+                    partMoveFromLocation.isKinematicAfter = isKinematicAfter;
+                    partMoveFromLocation.useGravityAfter = useGravityAfter;
+
+                    partMoveFromLocation.acceptableDegreesFromEndPoint = acceptableDegreesFromEndPoint;
+                    partMoveFromLocation.acceptableMetersFromEndPoint = acceptableMetersFromEndPoint;
+                    partMoveFromLocation.requireColliderOverlap = requireColliderOverlap;
+                    partMoveFromLocation.checkXaxis = checkXaxis;
+                    partMoveFromLocation.checkYaxis = checkYaxis;
+                    partMoveFromLocation.checkZaxis = checkZaxis;
+                    partMoveFromLocation.requireHandAttached = requireHandAttached;
+                    
                     objectiveCommands = partMoveFromLocation;
                     break;
                 case AllObjetiveTypes.Interaction:

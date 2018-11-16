@@ -12,14 +12,19 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     public Objective.PartObjectiveTypes ObjectiveType = Objective.PartObjectiveTypes.MoveToLocation;
     private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     [Header("Move To Location Settings")]
-    public Transform endingLocation;
+    public bool useGravityBefore = true;
+    public bool isKinematicBefore = false;
     public bool showEndPointOutline = true;
+    public bool useGravityAfter = false;
+    public bool isKinematicAfter = true;
+    public Transform endingLocation;
     public float acceptableDegreesFromEndPoint = 5f;
     public float acceptableMetersFromEndPoint = 0.1f;
     public bool checkXaxis = true;
     public bool checkYaxis = true;
     public bool checkZaxis = true;
-    public bool detachAndSnap = true;
+    public bool requireHandAttached = true;
+    public bool requireColliderOverlap = true;
     [Header("Move From Location Settings")]
     public bool onlyCompleteAfterRelease = true;
     public UnityEvent onAcceptablePlacement;
@@ -107,7 +112,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     {
         if (endingLocation != null)
         {
-
+            
             endPointGameObject = Instantiate(gameObject, endingLocation.position, endingLocation.rotation);
             Destroy(endPointGameObject.GetComponent<InteractablePart>());
             Destroy(endPointGameObject.GetComponent<Rigidbody>());
@@ -131,10 +136,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                     endPointColliders.Add(collider.GetInstanceID(), collider);
                 }
             }
-            if (!showEndPointOutline)
-            {
-                SetEndPointVisibility(false);
-            }
+           
+            SetEndPointVisibility(showEndPointOutline);
             endPointGameObject.SetActive(endPointActiveState);
             //Debug.Log("endpoint: " + endingLocation.gameObject.name);
         }
@@ -149,19 +152,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             for (int i = 0; i < renderers.Length; i++)
             {
                 renderers[i].enabled = isVisible;
-            }
-        }
-    }
-
-    public void ShowEndPointIfApplicable()
-    {
-        if (showEndPointOutline)
-        {
-            endPointActiveState = true;
-            if (endPointGameObject != null)
-            {
-                endPointGameObject.SetActive(endPointActiveState);
-                SetEndPointVisibility(true);
             }
         }
     }
@@ -359,12 +349,12 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 case PlacementStates.UnacceptablePlaced:
                 case PlacementStates.DefaultPlaced:
                     SetAllTriggers(gameObject, false);
-                    rigidbody.isKinematic = false;
-                    rigidbody.useGravity = true;
+                    rigidbody.isKinematic = requireHandAttached ? isKinematicAfter : isKinematicBefore;
+                    rigidbody.useGravity = requireHandAttached ? useGravityAfter : useGravityBefore;
                     break;
                 case PlacementStates.AcceptablePlaced:
-                    rigidbody.isKinematic = true;
-                    rigidbody.useGravity = false;
+                    rigidbody.isKinematic = isKinematicAfter;
+                    rigidbody.useGravity = useGravityAfter;
                     SetAllTriggers(gameObject, false);
                     break;
                 case PlacementStates.DefaultHeld:
@@ -482,7 +472,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
                 {
                     // First test if they are at least overlapping
-                    if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
+                    if (requireColliderOverlap && isTouchingEndPoint  || (!showEndPointOutline && endPointGameObject != null))
                     {
                         if (endPointGameObject != null
                         && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
@@ -529,7 +519,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
                 {
                     // First check if they are at least overlapping
-                    if (isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
+                    if (requireColliderOverlap &&  isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
                     {
                         // Then if they are relatively close in position and rotation
                         if (IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
@@ -551,14 +541,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                                     UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
                                     break;
                                 case PlacementStates.UnacceptableHover:
-                                    if (detachAndSnap)
-                                    {
-                                        UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
-                                    }
-                                    else
-                                    {
-                                        UpdatePlacementState(PlacementStates.AcceptableHoverNoDetach);
-                                    }
+                                    UpdatePlacementState(PlacementStates.AcceptableHoverCanDetach);
                                     break;
                             }
                         }
@@ -585,6 +568,15 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
     }
 
+    void Update()
+    {
+        if(objectiveState == Objective.ObjectiveStates.InProgress && endPointGameObject != null && !base.attached && requireHandAttached && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+                        && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
+        {
+            UpdatePlacementState(PlacementStates.AcceptablePlaced);
+            OnObjectiveFinish();
+        }
+    }
 
     //-------------------------------------------------
     // Called when this attached GameObject becomes the primary attached object
@@ -606,24 +598,26 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         objectiveState = Objective.ObjectiveStates.InProgress;
         highlightOnHover = true;
         interactable.highlightOnHover = true;
-        if(ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
+        isTouchingEndPoint = false;
+        currentPlacementState = PlacementStates.DefaultPlaced;
+        if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
-            if (showEndPointOutline)
+            rigidbody.isKinematic = isKinematicBefore;
+            rigidbody.useGravity = useGravityBefore;
+            InitializeEndPoint();
+            endPointActiveState = true;
+            if (endPointGameObject != null)
             {
-                InitializeEndPoint();
-                endPointActiveState = true;
-                if (endPointGameObject != null)
-                {
-                    endPointGameObject.SetActive(endPointActiveState);
-                    SetEndPointVisibility(true);
-                }
+                endPointGameObject.SetActive(endPointActiveState);
+                SetEndPointVisibility(showEndPointOutline);
             }
+            
         }
         else if(ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
         {
             SetEndPointVisibility(false);
-            rigidbody.isKinematic = true;
-            rigidbody.useGravity = false;
+            rigidbody.isKinematic = isKinematicBefore;
+            rigidbody.useGravity = useGravityBefore;
         }
         
     }
@@ -635,9 +629,15 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
     public void OnObjectiveFinish()
     {
+        rigidbody.isKinematic = isKinematicAfter;
+        rigidbody.useGravity = useGravityAfter;
         CompletionEvent();
         objectiveState = Objective.ObjectiveStates.NotInProgress;
         interactable.highlightOnHover = false;
         SetEndPointVisibility(false);
+        if(endPointGameObject != null)
+        {
+            Destroy(endPointGameObject);
+        }
     }
 }
