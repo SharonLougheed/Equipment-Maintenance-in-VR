@@ -1,0 +1,640 @@
+fileFormatVersion: 2
+guid: c502457bbc3c2664abbbc8c04354ac30
+ModelImporter:
+  serializedVersion: 23
+  fileIDToRecycleName:
+    100000: stitch_result_stitch all
+    100002: stitch_result_stitch all 1
+    100004: stitch_result_stitch all 10
+    100006: stitch_result_stitch all 100
+    100008: stitch_result_stitch all 101
+    100010: stitch_result_stitch all 102
+    100012: stitch_result_stitch all 103
+    100014: stitch_result_stitch all 104
+    100016: stitch_result_stitch all 105
+    100018: stitch_result_stitch all 106
+    100020: stitch_result_stitch all 107
+    100022: stitch_result_stitch all 108
+    100024: stitch_result_stitch all 11
+    100026: stitch_result_stitch all 12
+    100028: stitch_result_stitch all 13
+    100030: stitch_result_stitch all 14
+    100032: stitch_result_stitch all 15
+    100034: stitch_result_stitch all 16
+    100036: stitch_result_stitch all 17
+    100038: stitch_result_stitch all 18
+    100040: stitch_result_stitch all 19
+    100042: stitch_result_stitch all 2
+    100044: stitch_result_stitch all 20
+    100046: stitch_result_stitch all 21
+    100048: stitch_result_stitch all 22
+    100050: stitch_result_stitch all 23
+    100052: stitch_result_stitch all 24
+    100054: stitch_result_stitch all 25
+    100056: stitch_result_stitch all 26
+    100058: stitch_result_stitch all 27
+    100060: stitch_result_stitch all 28
+    100062: stitch_result_stitch all 29
+    100064: stitch_result_stitch all 3
+    100066: stitch_result_stitch all 30
+    100068: stitch_result_stitch all 31
+    100070: stitch_result_stitch all 32
+    100072: stitch_result_stitch all 33
+    100074: stitch_result_stitch all 34
+    100076: stitch_result_stitch all 35
+    100078: stitch_result_stitch all 36
+    100080: stitch_result_stitch all 37
+    100082: stitch_result_stitch all 38
+    100084: stitch_result_stitch all 39
+    100086: stitch_result_stitch all 4
+    100088: stitch_result_stitch all 40
+    100090: stitch_result_stitch all 41
+    100092: stitch_result_stitch all 42
+    100094: stitch_result_stitch all 43
+    100096: stitch_result_stitch all 44
+    100098: stitch_result_stitch all 45
+    100100: stitch_result_stitch all 46
+    100102: stitch_result_stitch all 47
+    100104: stitch_result_stitch all 48
+    100106: stitch_result_stitch all 49
+    100108: stitch_result_stitch all 5
+    100110: stitch_result_stitch all 50
+    100112: stitch_result_stitch all 51
+    100114: stitch_result_stitch all 52
+    100116: stitch_result_stitch all 53
+    100118: stitch_result_stitch all 54
+    100120: stitch_result_stitch all 55
+    100122: stitch_result_stitch all 56
+    100124: stitch_result_stitch all 57
+    100126: stitch_result_stitch all 58
+    100128: stitch_result_stitch all 59
+    100130: stitch_result_stitch all 6
+    100132: stitch_result_stitch all 60
+    100134: stitch_result_stitch all 61
+    100136: stitch_result_stitch all 62
+    100138: stitch_result_stitch all 63
+    100140: stitch_result_stitch all 64
+    100142: stitch_result_stitch all 65
+    100144: stitch_result_stitch all 66
+    100146: stitch_result_stitch all 67
+    100148: stitch_result_stitch all 68
+    100150: stitch_result_stitch all 69
+    100152: stitch_result_stitch all 7
+    100154: stitch_result_stitch all 70
+    100156: stitch_result_stitch all 71
+    100158: stitch_result_stitch all 72
+    100160: stitch_result_stitch all 73
+    100162: stitch_result_stitch all 74
+    100164: stitch_result_stitch all 75
+    100166: stitch_result_stitch all 76
+    100168: stitch_result_stitch all 77
+    100170: stitch_result_stitch all 78
+    100172: stitch_result_stitch all 79
+    100174: stitch_result_stitch all 8
+    100176: stitch_result_stitch all 80
+    100178: stitch_result_stitch all 81
+    100180: stitch_result_stitch all 82
+    100182: stitch_result_stitch all 83
+    100184: stitch_result_stitch all 84
+    100186: stitch_result_stitch all 85
+    100188: stitch_result_stitch all 86
+    100190: stitch_result_stitch all 87
+    100192: stitch_result_stitch all 88
+    100194: stitch_result_stitch all 89
+    100196: stitch_result_stitch all 9
+    100198: stitch_result_stitch all 90
+    100200: stitch_result_stitch all 91
+    100202: stitch_result_stitch all 92
+    100204: stitch_result_stitch all 93
+    100206: stitch_result_stitch all 94
+    100208: stitch_result_stitch all 95
+    100210: stitch_result_stitch all 96
+    100212: stitch_result_stitch all 97
+    100214: stitch_result_stitch all 98
+    100216: stitch_result_stitch all 99
+    100218: //RootNode
+    400000: stitch_result_stitch all
+    400002: stitch_result_stitch all 1
+    400004: stitch_result_stitch all 10
+    400006: stitch_result_stitch all 100
+    400008: stitch_result_stitch all 101
+    400010: stitch_result_stitch all 102
+    400012: stitch_result_stitch all 103
+    400014: stitch_result_stitch all 104
+    400016: stitch_result_stitch all 105
+    400018: stitch_result_stitch all 106
+    400020: stitch_result_stitch all 107
+    400022: stitch_result_stitch all 108
+    400024: stitch_result_stitch all 11
+    400026: stitch_result_stitch all 12
+    400028: stitch_result_stitch all 13
+    400030: stitch_result_stitch all 14
+    400032: stitch_result_stitch all 15
+    400034: stitch_result_stitch all 16
+    400036: stitch_result_stitch all 17
+    400038: stitch_result_stitch all 18
+    400040: stitch_result_stitch all 19
+    400042: stitch_result_stitch all 2
+    400044: stitch_result_stitch all 20
+    400046: stitch_result_stitch all 21
+    400048: stitch_result_stitch all 22
+    400050: stitch_result_stitch all 23
+    400052: stitch_result_stitch all 24
+    400054: stitch_result_stitch all 25
+    400056: stitch_result_stitch all 26
+    400058: stitch_result_stitch all 27
+    400060: stitch_result_stitch all 28
+    400062: stitch_result_stitch all 29
+    400064: stitch_result_stitch all 3
+    400066: stitch_result_stitch all 30
+    400068: stitch_result_stitch all 31
+    400070: stitch_result_stitch all 32
+    400072: stitch_result_stitch all 33
+    400074: stitch_result_stitch all 34
+    400076: stitch_result_stitch all 35
+    400078: stitch_result_stitch all 36
+    400080: stitch_result_stitch all 37
+    400082: stitch_result_stitch all 38
+    400084: stitch_result_stitch all 39
+    400086: stitch_result_stitch all 4
+    400088: stitch_result_stitch all 40
+    400090: stitch_result_stitch all 41
+    400092: stitch_result_stitch all 42
+    400094: stitch_result_stitch all 43
+    400096: stitch_result_stitch all 44
+    400098: stitch_result_stitch all 45
+    400100: stitch_result_stitch all 46
+    400102: stitch_result_stitch all 47
+    400104: stitch_result_stitch all 48
+    400106: stitch_result_stitch all 49
+    400108: stitch_result_stitch all 5
+    400110: stitch_result_stitch all 50
+    400112: stitch_result_stitch all 51
+    400114: stitch_result_stitch all 52
+    400116: stitch_result_stitch all 53
+    400118: stitch_result_stitch all 54
+    400120: stitch_result_stitch all 55
+    400122: stitch_result_stitch all 56
+    400124: stitch_result_stitch all 57
+    400126: stitch_result_stitch all 58
+    400128: stitch_result_stitch all 59
+    400130: stitch_result_stitch all 6
+    400132: stitch_result_stitch all 60
+    400134: stitch_result_stitch all 61
+    400136: stitch_result_stitch all 62
+    400138: stitch_result_stitch all 63
+    400140: stitch_result_stitch all 64
+    400142: stitch_result_stitch all 65
+    400144: stitch_result_stitch all 66
+    400146: stitch_result_stitch all 67
+    400148: stitch_result_stitch all 68
+    400150: stitch_result_stitch all 69
+    400152: stitch_result_stitch all 7
+    400154: stitch_result_stitch all 70
+    400156: stitch_result_stitch all 71
+    400158: stitch_result_stitch all 72
+    400160: stitch_result_stitch all 73
+    400162: stitch_result_stitch all 74
+    400164: stitch_result_stitch all 75
+    400166: stitch_result_stitch all 76
+    400168: stitch_result_stitch all 77
+    400170: stitch_result_stitch all 78
+    400172: stitch_result_stitch all 79
+    400174: stitch_result_stitch all 8
+    400176: stitch_result_stitch all 80
+    400178: stitch_result_stitch all 81
+    400180: stitch_result_stitch all 82
+    400182: stitch_result_stitch all 83
+    400184: stitch_result_stitch all 84
+    400186: stitch_result_stitch all 85
+    400188: stitch_result_stitch all 86
+    400190: stitch_result_stitch all 87
+    400192: stitch_result_stitch all 88
+    400194: stitch_result_stitch all 89
+    400196: stitch_result_stitch all 9
+    400198: stitch_result_stitch all 90
+    400200: stitch_result_stitch all 91
+    400202: stitch_result_stitch all 92
+    400204: stitch_result_stitch all 93
+    400206: stitch_result_stitch all 94
+    400208: stitch_result_stitch all 95
+    400210: stitch_result_stitch all 96
+    400212: stitch_result_stitch all 97
+    400214: stitch_result_stitch all 98
+    400216: stitch_result_stitch all 99
+    400218: //RootNode
+    2100000: 'Material #28'
+    2100002: 'Material #29'
+    2100004: 'Material #30'
+    2100006: 'Material #33'
+    2100008: 'Material #38'
+    2100010: 'Material #42'
+    2300000: stitch_result_stitch all
+    2300002: stitch_result_stitch all 1
+    2300004: stitch_result_stitch all 10
+    2300006: stitch_result_stitch all 100
+    2300008: stitch_result_stitch all 101
+    2300010: stitch_result_stitch all 102
+    2300012: stitch_result_stitch all 103
+    2300014: stitch_result_stitch all 104
+    2300016: stitch_result_stitch all 105
+    2300018: stitch_result_stitch all 106
+    2300020: stitch_result_stitch all 107
+    2300022: stitch_result_stitch all 108
+    2300024: stitch_result_stitch all 11
+    2300026: stitch_result_stitch all 12
+    2300028: stitch_result_stitch all 13
+    2300030: stitch_result_stitch all 14
+    2300032: stitch_result_stitch all 15
+    2300034: stitch_result_stitch all 16
+    2300036: stitch_result_stitch all 17
+    2300038: stitch_result_stitch all 18
+    2300040: stitch_result_stitch all 19
+    2300042: stitch_result_stitch all 2
+    2300044: stitch_result_stitch all 20
+    2300046: stitch_result_stitch all 21
+    2300048: stitch_result_stitch all 22
+    2300050: stitch_result_stitch all 23
+    2300052: stitch_result_stitch all 24
+    2300054: stitch_result_stitch all 25
+    2300056: stitch_result_stitch all 26
+    2300058: stitch_result_stitch all 27
+    2300060: stitch_result_stitch all 28
+    2300062: stitch_result_stitch all 29
+    2300064: stitch_result_stitch all 3
+    2300066: stitch_result_stitch all 30
+    2300068: stitch_result_stitch all 31
+    2300070: stitch_result_stitch all 32
+    2300072: stitch_result_stitch all 33
+    2300074: stitch_result_stitch all 34
+    2300076: stitch_result_stitch all 35
+    2300078: stitch_result_stitch all 36
+    2300080: stitch_result_stitch all 37
+    2300082: stitch_result_stitch all 38
+    2300084: stitch_result_stitch all 39
+    2300086: stitch_result_stitch all 4
+    2300088: stitch_result_stitch all 40
+    2300090: stitch_result_stitch all 41
+    2300092: stitch_result_stitch all 42
+    2300094: stitch_result_stitch all 43
+    2300096: stitch_result_stitch all 44
+    2300098: stitch_result_stitch all 45
+    2300100: stitch_result_stitch all 46
+    2300102: stitch_result_stitch all 47
+    2300104: stitch_result_stitch all 48
+    2300106: stitch_result_stitch all 49
+    2300108: stitch_result_stitch all 5
+    2300110: stitch_result_stitch all 50
+    2300112: stitch_result_stitch all 51
+    2300114: stitch_result_stitch all 52
+    2300116: stitch_result_stitch all 53
+    2300118: stitch_result_stitch all 54
+    2300120: stitch_result_stitch all 55
+    2300122: stitch_result_stitch all 56
+    2300124: stitch_result_stitch all 57
+    2300126: stitch_result_stitch all 58
+    2300128: stitch_result_stitch all 59
+    2300130: stitch_result_stitch all 6
+    2300132: stitch_result_stitch all 60
+    2300134: stitch_result_stitch all 61
+    2300136: stitch_result_stitch all 62
+    2300138: stitch_result_stitch all 63
+    2300140: stitch_result_stitch all 64
+    2300142: stitch_result_stitch all 65
+    2300144: stitch_result_stitch all 66
+    2300146: stitch_result_stitch all 67
+    2300148: stitch_result_stitch all 68
+    2300150: stitch_result_stitch all 69
+    2300152: stitch_result_stitch all 7
+    2300154: stitch_result_stitch all 70
+    2300156: stitch_result_stitch all 71
+    2300158: stitch_result_stitch all 72
+    2300160: stitch_result_stitch all 73
+    2300162: stitch_result_stitch all 74
+    2300164: stitch_result_stitch all 75
+    2300166: stitch_result_stitch all 76
+    2300168: stitch_result_stitch all 77
+    2300170: stitch_result_stitch all 78
+    2300172: stitch_result_stitch all 79
+    2300174: stitch_result_stitch all 8
+    2300176: stitch_result_stitch all 80
+    2300178: stitch_result_stitch all 81
+    2300180: stitch_result_stitch all 82
+    2300182: stitch_result_stitch all 83
+    2300184: stitch_result_stitch all 84
+    2300186: stitch_result_stitch all 85
+    2300188: stitch_result_stitch all 86
+    2300190: stitch_result_stitch all 87
+    2300192: stitch_result_stitch all 88
+    2300194: stitch_result_stitch all 89
+    2300196: stitch_result_stitch all 9
+    2300198: stitch_result_stitch all 90
+    2300200: stitch_result_stitch all 91
+    2300202: stitch_result_stitch all 92
+    2300204: stitch_result_stitch all 93
+    2300206: stitch_result_stitch all 94
+    2300208: stitch_result_stitch all 95
+    2300210: stitch_result_stitch all 96
+    2300212: stitch_result_stitch all 97
+    2300214: stitch_result_stitch all 98
+    2300216: stitch_result_stitch all 99
+    3300000: stitch_result_stitch all
+    3300002: stitch_result_stitch all 1
+    3300004: stitch_result_stitch all 10
+    3300006: stitch_result_stitch all 100
+    3300008: stitch_result_stitch all 101
+    3300010: stitch_result_stitch all 102
+    3300012: stitch_result_stitch all 103
+    3300014: stitch_result_stitch all 104
+    3300016: stitch_result_stitch all 105
+    3300018: stitch_result_stitch all 106
+    3300020: stitch_result_stitch all 107
+    3300022: stitch_result_stitch all 108
+    3300024: stitch_result_stitch all 11
+    3300026: stitch_result_stitch all 12
+    3300028: stitch_result_stitch all 13
+    3300030: stitch_result_stitch all 14
+    3300032: stitch_result_stitch all 15
+    3300034: stitch_result_stitch all 16
+    3300036: stitch_result_stitch all 17
+    3300038: stitch_result_stitch all 18
+    3300040: stitch_result_stitch all 19
+    3300042: stitch_result_stitch all 2
+    3300044: stitch_result_stitch all 20
+    3300046: stitch_result_stitch all 21
+    3300048: stitch_result_stitch all 22
+    3300050: stitch_result_stitch all 23
+    3300052: stitch_result_stitch all 24
+    3300054: stitch_result_stitch all 25
+    3300056: stitch_result_stitch all 26
+    3300058: stitch_result_stitch all 27
+    3300060: stitch_result_stitch all 28
+    3300062: stitch_result_stitch all 29
+    3300064: stitch_result_stitch all 3
+    3300066: stitch_result_stitch all 30
+    3300068: stitch_result_stitch all 31
+    3300070: stitch_result_stitch all 32
+    3300072: stitch_result_stitch all 33
+    3300074: stitch_result_stitch all 34
+    3300076: stitch_result_stitch all 35
+    3300078: stitch_result_stitch all 36
+    3300080: stitch_result_stitch all 37
+    3300082: stitch_result_stitch all 38
+    3300084: stitch_result_stitch all 39
+    3300086: stitch_result_stitch all 4
+    3300088: stitch_result_stitch all 40
+    3300090: stitch_result_stitch all 41
+    3300092: stitch_result_stitch all 42
+    3300094: stitch_result_stitch all 43
+    3300096: stitch_result_stitch all 44
+    3300098: stitch_result_stitch all 45
+    3300100: stitch_result_stitch all 46
+    3300102: stitch_result_stitch all 47
+    3300104: stitch_result_stitch all 48
+    3300106: stitch_result_stitch all 49
+    3300108: stitch_result_stitch all 5
+    3300110: stitch_result_stitch all 50
+    3300112: stitch_result_stitch all 51
+    3300114: stitch_result_stitch all 52
+    3300116: stitch_result_stitch all 53
+    3300118: stitch_result_stitch all 54
+    3300120: stitch_result_stitch all 55
+    3300122: stitch_result_stitch all 56
+    3300124: stitch_result_stitch all 57
+    3300126: stitch_result_stitch all 58
+    3300128: stitch_result_stitch all 59
+    3300130: stitch_result_stitch all 6
+    3300132: stitch_result_stitch all 60
+    3300134: stitch_result_stitch all 61
+    3300136: stitch_result_stitch all 62
+    3300138: stitch_result_stitch all 63
+    3300140: stitch_result_stitch all 64
+    3300142: stitch_result_stitch all 65
+    3300144: stitch_result_stitch all 66
+    3300146: stitch_result_stitch all 67
+    3300148: stitch_result_stitch all 68
+    3300150: stitch_result_stitch all 69
+    3300152: stitch_result_stitch all 7
+    3300154: stitch_result_stitch all 70
+    3300156: stitch_result_stitch all 71
+    3300158: stitch_result_stitch all 72
+    3300160: stitch_result_stitch all 73
+    3300162: stitch_result_stitch all 74
+    3300164: stitch_result_stitch all 75
+    3300166: stitch_result_stitch all 76
+    3300168: stitch_result_stitch all 77
+    3300170: stitch_result_stitch all 78
+    3300172: stitch_result_stitch all 79
+    3300174: stitch_result_stitch all 8
+    3300176: stitch_result_stitch all 80
+    3300178: stitch_result_stitch all 81
+    3300180: stitch_result_stitch all 82
+    3300182: stitch_result_stitch all 83
+    3300184: stitch_result_stitch all 84
+    3300186: stitch_result_stitch all 85
+    3300188: stitch_result_stitch all 86
+    3300190: stitch_result_stitch all 87
+    3300192: stitch_result_stitch all 88
+    3300194: stitch_result_stitch all 89
+    3300196: stitch_result_stitch all 9
+    3300198: stitch_result_stitch all 90
+    3300200: stitch_result_stitch all 91
+    3300202: stitch_result_stitch all 92
+    3300204: stitch_result_stitch all 93
+    3300206: stitch_result_stitch all 94
+    3300208: stitch_result_stitch all 95
+    3300210: stitch_result_stitch all 96
+    3300212: stitch_result_stitch all 97
+    3300214: stitch_result_stitch all 98
+    3300216: stitch_result_stitch all 99
+    4300000: stitch_result_stitch all
+    4300002: stitch_result_stitch all
+    4300004: stitch_result_stitch all
+    4300006: stitch_result_stitch all
+    4300008: stitch_result_stitch all
+    4300010: stitch_result_stitch all
+    4300012: stitch_result_stitch all
+    4300014: stitch_result_stitch all
+    4300016: stitch_result_stitch all
+    4300018: stitch_result_stitch all
+    4300020: stitch_result_stitch all
+    4300022: stitch_result_stitch all
+    4300024: stitch_result_stitch all
+    4300026: stitch_result_stitch all
+    4300028: stitch_result_stitch all
+    4300030: stitch_result_stitch all
+    4300032: stitch_result_stitch all
+    4300034: stitch_result_stitch all
+    4300036: stitch_result_stitch all
+    4300038: stitch_result_stitch all
+    4300040: stitch_result_stitch all
+    4300042: stitch_result_stitch all
+    4300044: stitch_result_stitch all
+    4300046: stitch_result_stitch all
+    4300048: stitch_result_stitch all
+    4300050: stitch_result_stitch all
+    4300052: stitch_result_stitch all
+    4300054: stitch_result_stitch all
+    4300056: stitch_result_stitch all
+    4300058: stitch_result_stitch all
+    4300060: stitch_result_stitch all
+    4300062: stitch_result_stitch all
+    4300064: stitch_result_stitch all
+    4300066: stitch_result_stitch all
+    4300068: stitch_result_stitch all
+    4300070: stitch_result_stitch all
+    4300072: stitch_result_stitch all
+    4300074: stitch_result_stitch all
+    4300076: stitch_result_stitch all
+    4300078: stitch_result_stitch all
+    4300080: stitch_result_stitch all
+    4300082: stitch_result_stitch all
+    4300084: stitch_result_stitch all
+    4300086: stitch_result_stitch all
+    4300088: stitch_result_stitch all
+    4300090: stitch_result_stitch all
+    4300092: stitch_result_stitch all
+    4300094: stitch_result_stitch all
+    4300096: stitch_result_stitch all
+    4300098: stitch_result_stitch all
+    4300100: stitch_result_stitch all
+    4300102: stitch_result_stitch all
+    4300104: stitch_result_stitch all
+    4300106: stitch_result_stitch all
+    4300108: stitch_result_stitch all
+    4300110: stitch_result_stitch all
+    4300112: stitch_result_stitch all
+    4300114: stitch_result_stitch all
+    4300116: stitch_result_stitch all
+    4300118: stitch_result_stitch all
+    4300120: stitch_result_stitch all
+    4300122: stitch_result_stitch all
+    4300124: stitch_result_stitch all
+    4300126: stitch_result_stitch all
+    4300128: stitch_result_stitch all
+    4300130: stitch_result_stitch all
+    4300132: stitch_result_stitch all
+    4300134: stitch_result_stitch all
+    4300136: stitch_result_stitch all
+    4300138: stitch_result_stitch all
+    4300140: stitch_result_stitch all
+    4300142: stitch_result_stitch all
+    4300144: stitch_result_stitch all
+    4300146: stitch_result_stitch all
+    4300148: stitch_result_stitch all
+    4300150: stitch_result_stitch all
+    4300152: stitch_result_stitch all
+    4300154: stitch_result_stitch all
+    4300156: stitch_result_stitch all
+    4300158: stitch_result_stitch all
+    4300160: stitch_result_stitch all
+    4300162: stitch_result_stitch all
+    4300164: stitch_result_stitch all
+    4300166: stitch_result_stitch all
+    4300168: stitch_result_stitch all
+    4300170: stitch_result_stitch all
+    4300172: stitch_result_stitch all
+    4300174: stitch_result_stitch all
+    4300176: stitch_result_stitch all
+    4300178: stitch_result_stitch all
+    4300180: stitch_result_stitch all
+    4300182: stitch_result_stitch all
+    4300184: stitch_result_stitch all
+    4300186: stitch_result_stitch all
+    4300188: stitch_result_stitch all
+    4300190: stitch_result_stitch all
+    4300192: stitch_result_stitch all
+    4300194: stitch_result_stitch all
+    4300196: stitch_result_stitch all
+    4300198: stitch_result_stitch all
+    4300200: stitch_result_stitch all
+    4300202: stitch_result_stitch all
+    4300204: stitch_result_stitch all
+    4300206: stitch_result_stitch all
+    4300208: stitch_result_stitch all
+    4300210: stitch_result_stitch all
+    4300212: stitch_result_stitch all
+    4300214: stitch_result_stitch all
+    4300216: stitch_result_stitch all
+  externalObjects: {}
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    preserveHierarchy: 0
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    previousCalculatedGlobalScale: 1
+    hasPreviousCalculatedGlobalScale: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
