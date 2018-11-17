@@ -42,7 +42,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     [EnumFlags] public PartObjectiveSettings partObjectiveSettings = PartObjectiveSettings.RequireHandAttached | PartObjectiveSettings.RequireColliderOverlap;
     [Header("Move From Location Settings")]
     public bool onlyCompleteAfterRelease = true;
-    public UnityEvent onAcceptablePlacement;
 
     private Material defaultOutlineMaterial;
     private Material acceptablePlacementMaterial;
@@ -178,13 +177,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }
     }
 
-
-    private void OnAcceptablePlacement()
-    {
-        //onAcceptablePlacement.Invoke();
-    }
-
-    
     public void VibrateController(Hand hand, float durationSec, float frequency, float amplitude)
     {
         StartCoroutine(VibrateControllerContinuous(hand, durationSec, frequency, amplitude));
@@ -505,6 +497,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         {
             return;
         }
+        // Update state as grab is ending to one of the placed states
         if (hand.IsGrabEnding(this.gameObject))
         {
             // Detach this object from the hand
@@ -525,7 +518,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                             gameObject.transform.position = endPointGameObject.transform.position;
                             gameObject.transform.rotation = endPointGameObject.transform.rotation;
                             UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                            OnAcceptablePlacement();
+
                             OnObjectiveFinish();
                         }
                         else
@@ -541,7 +534,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 else if (ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
                 {
                     // For now dropping it anywhere implies a successful movement away from a location
-                    OnAcceptablePlacement();
                     UpdatePlacementState(PlacementStates.AcceptablePlaced);
                     OnObjectiveFinish();
                 }
@@ -552,7 +544,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             }
             
         }
-
+        // Update state as this object is being held
         if (endPointGameObject != null
             && interactable.attachedToHand != null
             )
@@ -577,7 +569,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                                     gameObject.transform.position = endPointGameObject.transform.position;
                                     gameObject.transform.rotation = endPointGameObject.transform.rotation;
                                     UpdatePlacementState(PlacementStates.AcceptablePlaced);
-                                    OnAcceptablePlacement();
+
                                     OnObjectiveFinish();
                                     break;
                                 case PlacementStates.AcceptablePlaced:
@@ -619,6 +611,23 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }
     }
 
+
+    public void ApplyStartConditions()
+    {
+        isTouchingEndPoint = false;
+        currentPlacementState = PlacementStates.DefaultPlaced;
+        rigidbody.isKinematic = (beginningRigidbodyState & RigidbodySettings.IsKinematic) != 0;
+        rigidbody.useGravity = (beginningRigidbodyState & RigidbodySettings.UseGravity) != 0;
+    }
+
+    public void ApplyEndingConditions()
+    {
+        rigidbody.isKinematic = (endingRigidbodyState & RigidbodySettings.IsKinematic) != 0;
+        rigidbody.useGravity = (endingRigidbodyState & RigidbodySettings.UseGravity) != 0;
+        SetEndPointVisibility(false);
+        endPointGameObject = null;
+    }
+
     /* Initializes the this object with the settings of the objective and resets any state variables
      */
     public void OnObjectiveStart()
@@ -626,11 +635,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         objectiveState = Objective.ObjectiveStates.InProgress;
         highlightOnHover = true;
         interactable.highlightOnHover = true;
-        isTouchingEndPoint = false;
-
-        rigidbody.isKinematic = (beginningRigidbodyState & RigidbodySettings.IsKinematic) != 0;
-        rigidbody.useGravity = (beginningRigidbodyState & RigidbodySettings.UseGravity) != 0;
-        currentPlacementState = PlacementStates.DefaultPlaced;
+        ApplyStartConditions();
         if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
             InitializeEndPoint();
@@ -646,7 +651,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         {
             SetEndPointVisibility(false);
         }
-        
     }
 
     public void OnObjectiveReset()
@@ -654,20 +658,13 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         throw new NotImplementedException();
     }
 
-
     /* Called when the objective is completed and applies ending states to the object
      */
     public void OnObjectiveFinish()
     {
-        rigidbody.isKinematic = (endingRigidbodyState & RigidbodySettings.IsKinematic) != 0;
-        rigidbody.useGravity = (endingRigidbodyState & RigidbodySettings.UseGravity) != 0;
+        ApplyEndingConditions();
         CompletionEvent();
         objectiveState = Objective.ObjectiveStates.NotInProgress;
         interactable.highlightOnHover = false;
-        SetEndPointVisibility(false);
-        if(endPointGameObject != null)
-        {
-            Destroy(endPointGameObject);
-        }
     }
 }
