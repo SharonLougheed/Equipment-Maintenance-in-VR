@@ -7,11 +7,33 @@ using Valve.VR.InteractionSystem;
 
 public class InteractablePart : Throwable, IObjectiveCommands {
 
+    [Flags] public enum Axis_t
+    {
+        //None = 0,
+        X = 1 << 0,
+        Y = 1 << 1,
+        Z = 1 << 2,
+    }
+    [Flags] public enum RigidbodySettings
+    {
+        //None = 0,
+        UseGravity = 1 << 0,
+        IsKinematic = 1 << 1,
+        ModeDefault = 1 << 2,
+    }
+    [Flags] public enum PartObjectiveSettings
+    {
+        //None = 0,
+        RequireHandAttached = 1 << 0,
+        RequireColliderOverlap = 1 << 1,
+    }
     public Transform gripAttachOffset;
     public Transform pinchAttachOffset;
     public Objective.PartObjectiveTypes ObjectiveType = Objective.PartObjectiveTypes.MoveToLocation;
     private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     [Header("Move To Location Settings")]
+    //[EnumFlags] public RigidbodySettings beginningKinematicState = RigidbodySettings.UseGravity;
+    //[EnumFlags] public RigidbodySettings endingKinematicState = RigidbodySettings.IsKinematic;
     public bool useGravityBefore = true;
     public bool isKinematicBefore = false;
     public bool showEndPointOutline = true;
@@ -20,9 +42,11 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     public Transform endingLocation;
     public float acceptableDegreesFromEndPoint = 5f;
     public float acceptableMetersFromEndPoint = 0.1f;
+    //[EnumFlags] public Axis_t rotationAxisToCheck = Axis_t.X | Axis_t.Y | Axis_t.Z;
     public bool checkXaxis = true;
     public bool checkYaxis = true;
     public bool checkZaxis = true;
+    //[EnumFlags] public PartObjectiveSettings partObjectiveSettings = PartObjectiveSettings.RequireColliderOverlap | PartObjectiveSettings.RequireColliderOverlap;
     public bool requireHandAttached = true;
     public bool requireColliderOverlap = true;
     [Header("Move From Location Settings")]
@@ -41,17 +65,18 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     private bool selfBoundsExpired = true;
     private bool otherBoundsExpired = true;
     private List<GameObject> endPointObjectList;
-    private Dictionary<int, Material[]> endPointOriginalMaterials;
     private Dictionary<int, Collider> endPointColliders;
     private enum PlacementStates { DefaultPlaced, DefaultHeld, UnacceptableHover, AcceptableHoverCanDetach, AcceptableHoverNoDetach, AcceptablePlaced, UnacceptablePlaced };
     private PlacementStates currentPlacementState = PlacementStates.DefaultPlaced;
     private bool isTouchingEndPoint = false;
     private bool endPointActiveState = false;
     private bool highlightOnHover = false;
-
+    private Vector3 endingPosition;
+    private Quaternion endingRotation;
 
     public event Action CompletionEvent;
 
+    // Loads in materials used to indicate the accuracy of the attempted object placement
     protected override void Awake()
     {
         base.Awake();
@@ -60,13 +85,19 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         unacceptablePlacementMaterial = Resources.Load("Materials/OutlineMatRed") as Material;
     }
 
-
+    // Start by setting the interactable to not highlight unless the objective has started in which the variable will hold true
+    // and copy ending location transform data incase it moves during runtime
     void Start () {
-        interactable.highlightOnHover = false;
+        interactable.highlightOnHover = highlightOnHover;
         SetStatic(gameObject, false);
+        if(endingLocation != null)
+        {
+            endingPosition = endingLocation.position;
+            endingRotation = endingLocation.rotation;
+        }
     }
 
-    
+    // Sets all GameObjects at or below obj to or fom static
     private void SetStatic(GameObject obj, bool isStatic)
     {
         List<GameObject> allObjects = GetAllGameObjectsAtOrBelow(obj);
@@ -76,7 +107,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }
     }
 
-
+    // Gets all the children and self of a gameobject
     private List<GameObject> GetAllGameObjectsAtOrBelow(GameObject start)
     {
         List<GameObject> gameObjects = new List<GameObject>();
@@ -86,7 +117,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         return gameObjects;
     }
 
-   
+   // Applies a material to all gameobjects in a list
     private void ApplyMaterialToList(List<GameObject> gameObjects, Material mat)
     {
         for (int i = 0; i < gameObjects.Count; i++)
@@ -97,7 +128,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }
     }
 
-
+    // For some reason the size of the previous material array must be matched in order to show up
     private Material[] GetArrayOfMaterial(Material mat, int size)
     {
         Material[] materials = new Material[size];
@@ -108,12 +139,13 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         return materials;
     }
 
+    // Create the ending location gameobject and outline by duplicating this one and removing its scripts
     private void InitializeEndPoint()
     {
         if (endingLocation != null)
         {
             
-            endPointGameObject = Instantiate(gameObject, endingLocation.position, endingLocation.rotation);
+            endPointGameObject = Instantiate(gameObject, endingPosition, endingRotation);
             Destroy(endPointGameObject.GetComponent<InteractablePart>());
             Destroy(endPointGameObject.GetComponent<Rigidbody>());
             Destroy(endPointGameObject.GetComponent<Throwable>());
@@ -139,11 +171,10 @@ public class InteractablePart : Throwable, IObjectiveCommands {
            
             SetEndPointVisibility(showEndPointOutline);
             endPointGameObject.SetActive(endPointActiveState);
-            //Debug.Log("endpoint: " + endingLocation.gameObject.name);
         }
     }
 
-
+    // Sets this visibility of all of the endpoints renderers
     private void SetEndPointVisibility(bool isVisible)
     {
         if(endPointGameObject != null)
@@ -162,7 +193,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         //onAcceptablePlacement.Invoke();
     }
 
-
+    
     public void VibrateController(Hand hand, float durationSec, float frequency, float amplitude)
     {
         StartCoroutine(VibrateControllerContinuous(hand, durationSec, frequency, amplitude));
@@ -175,7 +206,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         yield break;
     }
 
-
+    // Checks whether two rotations are within some 90 degree rotation from each other
+    // NOTE The mod 90 was only added because sometimes the angles are very similar but appear to be nearly 180 degrees off
     private bool IsWithinRangeOfRotation(Quaternion rot1, Quaternion rot2, float limit)
     {
         if (checkXaxis)
@@ -187,7 +219,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             if (angle > limit)
                 return false;
         }
-        if (false && checkYaxis)
+        if (checkYaxis)
         {
             float angle = Math.Abs(rot1.eulerAngles.y - rot2.eulerAngles.y) % 360;
             angle = angle > 180 ? 360 - angle : angle;
@@ -208,6 +240,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         return true;
     }
 
+    // Checks whether another transform is within range of this one's center
+    // This transform is recalculated every frame since it appears to not work otherwise when being moved by a hand
     private bool IsWithinRangeOfCenter(Transform otherTransform, float limit)
     {
         if (selfBoundsExpired)
@@ -230,7 +264,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         return Vector3.Distance(selfCenter, otherCenter) <= limit ? true : false;
     }
 
-
+    // Calculates a single bounds by aggregating several bounds
     private Bounds CalculateGroupBounds(params Transform[] aObjects)
     {
         Bounds b = new Bounds();
@@ -256,7 +290,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         return b;
     }
 
-
+    // Sets all colliders to the boolean trigger state in a gameobject
     private void SetAllTriggers(GameObject obj, bool isOn)
     {
         Collider[] colliders = obj.GetComponentsInChildren<Collider>();
@@ -265,7 +299,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             colliders[i].isTrigger = isOn;
         }
     }
-
+    
+    // Do not react until it is this objects objective
     protected override void OnHandHoverBegin(Hand hand)
     {
         if (objectiveState == Objective.ObjectiveStates.InProgress)
@@ -279,6 +314,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     }
     protected override void HandHoverUpdate(Hand hand)
     {
+        // Allowing this before checking Objective state so that Throwable can cleanup easier
         if (attachEaseIn)
         {
             float t = Util.RemapNumberClamped(Time.time, attachTime, attachTime + snapAttachEaseInTime, 0.0f, 1.0f);
@@ -295,12 +331,12 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             }
         }
 
-        GrabTypes startingGrabType = hand.GetGrabStarting();
 
         if(objectiveState == Objective.ObjectiveStates.InProgress)
         {
             // when in an objective 
 
+            GrabTypes startingGrabType = hand.GetGrabStarting();
             if (interactable.attachedToHand == null && startingGrabType != GrabTypes.None)
             {
                 // Attach this object to the hand
@@ -329,13 +365,17 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 }
             }
         }
-        else
+        else if(objectiveState == Objective.ObjectiveStates.NotInProgress)
         {
             // when outside of an objective
+            // TODO make obtion for acting throwable
         }
     }
 
-
+    /* Updates the placement state to a new state only if it is a different state
+     *  This involves two main components, (1) changing the interactables rigidbody settings
+     *  and (2) changing the ending location's appearance
+     */
     private void UpdatePlacementState(PlacementStates newState)
     {
         PlacementStates oldState = currentPlacementState;
@@ -398,6 +438,10 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         //Debug.Log("Placement State: " + currentPlacementState.ToString());
     }
 
+    /* Used to determine if this object is colliding with its ending location
+     * This is useful because it drastically cuts down on computations for checking
+     * rotation and distance from the centers
+     */
     private void OnTriggerEnter(Collider other)
     {
         //Debug.Log("OnTriggerEnter");
@@ -410,7 +454,10 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }           
     }
 
-
+    /* Used to determine if this object is colliding with its ending location
+     * This is useful because it drastically cuts down on computations for checking
+     * rotation and distance from the centers
+     */
     private void OnTriggerExit(Collider other)
     {
         //Debug.Log("OnTriggerExit");
@@ -433,10 +480,10 @@ public class InteractablePart : Throwable, IObjectiveCommands {
 
         //onDetachFromHand.Invoke();
 
-        hand.HoverUnlock(null);
+        hand.HoverUnlock(interactable);
 
         base.rigidbody.interpolation = hadInterpolation;
-        Debug.Log("State: " + currentPlacementState);
+        
         if (currentPlacementState != PlacementStates.AcceptablePlaced)
         {
             Vector3 velocity;
@@ -450,9 +497,9 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     }
 
 
-    //-------------------------------------------------
-    // Called every Update() while this GameObject is attached to the hand
-    //-------------------------------------------------
+    /* Called every Update() while this GameObject is attached to the hand
+     * This function is responsible for changing between states VERY IMPORTANT
+     */
     protected override void HandAttachedUpdate(Hand hand)
     {
         bool isFallbackHand = hand.name == "FallbackHand" ? true : false;
@@ -465,8 +512,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             // Detach this object from the hand
             hand.DetachObject(gameObject, restoreOriginalParent);
 
-            // Call this to undo HoverLock
-            //hand.HoverUnlock(interactable);
             if (objectiveState == Objective.ObjectiveStates.InProgress)
             {
                 if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
@@ -560,14 +605,12 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                     // Do nothing
                 }
             }
-
-            
-
         }
-
-
     }
 
+    /* This is used to evaluate whether this object is in proximity of the ending location when it is not required to be attached to the hand.
+     * This is because it will no longer be recieving hand attached updates so it must be done in the update function!
+     */
     void Update()
     {
         if(objectiveState == Objective.ObjectiveStates.InProgress && endPointGameObject != null && !base.attached && !requireHandAttached && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
@@ -578,21 +621,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         }
     }
 
-    //-------------------------------------------------
-    // Called when this attached GameObject becomes the primary attached object
-    //-------------------------------------------------
-    private void OnHandFocusAcquired(Hand hand)
-    {
-    }
-
-
-    //-------------------------------------------------
-    // Called when another attached GameObject becomes the primary attached object
-    //-------------------------------------------------
-    private void OnHandFocusLost(Hand hand)
-    {
-    }
-
+    /* Initializes the this object with the settings of the objective and resets any state variables
+     */
     public void OnObjectiveStart()
     {   
         objectiveState = Objective.ObjectiveStates.InProgress;
@@ -628,6 +658,9 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         throw new NotImplementedException();
     }
 
+
+    /* Called when the objective is completed and applies ending states to the object
+     */
     public void OnObjectiveFinish()
     {
         rigidbody.isKinematic = isKinematicAfter;
