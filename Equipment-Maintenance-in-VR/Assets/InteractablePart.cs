@@ -61,8 +61,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     private bool isTouchingEndPoint = false;
     private bool endPointActiveState = false;
     private bool highlightOnHover = false;
-    private Vector3 endingPosition;
-    private Quaternion endingRotation;
 
     public event Action CompletionEvent;
 
@@ -80,11 +78,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     void Start () {
         interactable.highlightOnHover = highlightOnHover;
         SetStatic(gameObject, false);
-        if(endingLocation != null)
-        {
-            endingPosition = endingLocation.position;
-            endingRotation = endingLocation.rotation;
-        }
     }
 
     // Sets all GameObjects at or below obj to or fom static
@@ -134,8 +127,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     {
         if (endingLocation != null)
         {
-            
-            endPointGameObject = Instantiate(gameObject, endingPosition, endingRotation);
+            endPointGameObject = Instantiate(gameObject, endingLocation.position, endingLocation.rotation);
+            endPointGameObject.name = this.gameObject.name + "EndingLocation";
             Destroy(endPointGameObject.GetComponent<InteractablePart>());
             Destroy(endPointGameObject.GetComponent<Rigidbody>());
             Destroy(endPointGameObject.GetComponent<Throwable>());
@@ -161,6 +154,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
            
             SetEndPointVisibility(showEndPointOutline);
             endPointGameObject.SetActive(endPointActiveState);
+            Debug.Log("EndPoint Initializing, active: " + endPointActiveState + " visible: " + showEndPointOutline);
         }
     }
 
@@ -636,15 +630,18 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         highlightOnHover = true;
         interactable.highlightOnHover = true;
         ApplyStartConditions();
+        Debug.Log(ObjectiveType);
         if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
-            InitializeEndPoint();
             endPointActiveState = true;
+            InitializeEndPoint();
             if (endPointGameObject != null)
             {
                 endPointGameObject.SetActive(endPointActiveState);
                 SetEndPointVisibility(showEndPointOutline);
+                Debug.Log("EndPoint Created, active: " + endPointActiveState + " visible: " + showEndPointOutline);
             }
+
             
         }
         else if(ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
