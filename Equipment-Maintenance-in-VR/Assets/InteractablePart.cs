@@ -32,23 +32,14 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     public Objective.PartObjectiveTypes ObjectiveType = Objective.PartObjectiveTypes.MoveToLocation;
     private Objective.ObjectiveStates objectiveState = Objective.ObjectiveStates.NotInProgress;
     [Header("Move To Location Settings")]
-    //[EnumFlags] public RigidbodySettings beginningKinematicState = RigidbodySettings.UseGravity;
-    //[EnumFlags] public RigidbodySettings endingKinematicState = RigidbodySettings.IsKinematic;
-    public bool useGravityBefore = true;
-    public bool isKinematicBefore = false;
-    public bool showEndPointOutline = true;
-    public bool useGravityAfter = false;
-    public bool isKinematicAfter = true;
+    [EnumFlags] public RigidbodySettings beginningRigidbodyState = RigidbodySettings.UseGravity;
+    [EnumFlags] public RigidbodySettings endingRigidbodyState = RigidbodySettings.IsKinematic;
     public Transform endingLocation;
-    public float acceptableDegreesFromEndPoint = 5f;
-    public float acceptableMetersFromEndPoint = 0.1f;
-    //[EnumFlags] public Axis_t rotationAxisToCheck = Axis_t.X | Axis_t.Y | Axis_t.Z;
-    public bool checkXaxis = true;
-    public bool checkYaxis = true;
-    public bool checkZaxis = true;
-    //[EnumFlags] public PartObjectiveSettings partObjectiveSettings = PartObjectiveSettings.RequireColliderOverlap | PartObjectiveSettings.RequireColliderOverlap;
-    public bool requireHandAttached = true;
-    public bool requireColliderOverlap = true;
+    public bool showEndPointOutline = true;
+    public float acceptableDegreesFromEndPoint = 10f;
+    public float acceptableMetersFromEndPoint = 0.3f;
+    [EnumFlags] public Axis_t rotationAxisToCheck = Axis_t.X | Axis_t.Y | Axis_t.Z;
+    [EnumFlags] public PartObjectiveSettings partObjectiveSettings = PartObjectiveSettings.RequireHandAttached | PartObjectiveSettings.RequireColliderOverlap;
     [Header("Move From Location Settings")]
     public bool onlyCompleteAfterRelease = true;
     public UnityEvent onAcceptablePlacement;
@@ -210,7 +201,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     // NOTE The mod 90 was only added because sometimes the angles are very similar but appear to be nearly 180 degrees off
     private bool IsWithinRangeOfRotation(Quaternion rot1, Quaternion rot2, float limit)
     {
-        if (checkXaxis)
+        if ((rotationAxisToCheck & Axis_t.X) == Axis_t.X)
         {
             float angle = Math.Abs(rot1.eulerAngles.x - rot2.eulerAngles.x) % 360;
             angle = angle > 180 ? 360 - angle : angle;
@@ -219,7 +210,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             if (angle > limit)
                 return false;
         }
-        if (checkYaxis)
+        if ((rotationAxisToCheck & Axis_t.Y) == Axis_t.Y)
         {
             float angle = Math.Abs(rot1.eulerAngles.y - rot2.eulerAngles.y) % 360;
             angle = angle > 180 ? 360 - angle : angle;
@@ -228,7 +219,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             if (angle > limit)
                 return false;
         }
-        if (checkZaxis)
+        if ((rotationAxisToCheck & Axis_t.Z) == Axis_t.Z)
         {
             float angle = Math.Abs(rot1.eulerAngles.z - rot2.eulerAngles.z) % 360;
             angle = angle > 180 ? 360 - angle : angle;
@@ -389,12 +380,19 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 case PlacementStates.UnacceptablePlaced:
                 case PlacementStates.DefaultPlaced:
                     SetAllTriggers(gameObject, false);
-                    rigidbody.isKinematic = requireHandAttached ?  isKinematicBefore : isKinematicAfter;
-                    rigidbody.useGravity = requireHandAttached ? useGravityBefore : useGravityAfter;
+                    // Placed default means that the objective is not complete and it should either retain the rigidbody
+                    // state of before or after completion depending on if the hand is required to complete it
+                    // If the hand is required, then give this object the beginning rigidbody state
+                    // If the hand is not required then give this object the ending rigidbody state
+                    rigidbody.isKinematic = 
+                        (partObjectiveSettings & PartObjectiveSettings.RequireHandAttached) != 0 
+                        ?  (beginningRigidbodyState & RigidbodySettings.IsKinematic) != 0 : (endingRigidbodyState & RigidbodySettings.IsKinematic) != 0;
+                    rigidbody.useGravity = (partObjectiveSettings & PartObjectiveSettings.RequireHandAttached) != 0 
+                        ? (beginningRigidbodyState & RigidbodySettings.UseGravity) != 0 : (endingRigidbodyState & RigidbodySettings.UseGravity) != 0;
                     break;
                 case PlacementStates.AcceptablePlaced:
-                    rigidbody.isKinematic = isKinematicAfter;
-                    rigidbody.useGravity = useGravityAfter;
+                    rigidbody.isKinematic = (endingRigidbodyState & RigidbodySettings.IsKinematic) != 0;
+                    rigidbody.useGravity = (endingRigidbodyState & RigidbodySettings.UseGravity) != 0;
                     SetAllTriggers(gameObject, false);
                     break;
                 case PlacementStates.DefaultHeld:
@@ -516,8 +514,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
             {
                 if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
                 {
-                    // First test if they are at least overlapping
-                    if (requireColliderOverlap && isTouchingEndPoint  || (!showEndPointOutline && endPointGameObject != null))
+                    // If collider overlap is required then test if they are touching
+                    if ((partObjectiveSettings & PartObjectiveSettings.RequireColliderOverlap) != 0 && isTouchingEndPoint  || (!showEndPointOutline && endPointGameObject != null))
                     {
                         if (endPointGameObject != null
                         && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
@@ -564,7 +562,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
                 if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
                 {
                     // First check if they are at least overlapping
-                    if (requireColliderOverlap &&  isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
+                    if ((partObjectiveSettings & PartObjectiveSettings.RequireColliderOverlap) != 0 &&  isTouchingEndPoint || (!showEndPointOutline && endPointGameObject != null))
                     {
                         // Then if they are relatively close in position and rotation
                         if (IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
@@ -613,7 +611,7 @@ public class InteractablePart : Throwable, IObjectiveCommands {
      */
     void Update()
     {
-        if(objectiveState == Objective.ObjectiveStates.InProgress && endPointGameObject != null && !base.attached && !requireHandAttached && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
+        if(objectiveState == Objective.ObjectiveStates.InProgress && endPointGameObject != null && !base.attached && !((partObjectiveSettings & PartObjectiveSettings.RequireHandAttached) != 0) && IsWithinRangeOfCenter(endPointGameObject.transform, acceptableMetersFromEndPoint)
                         && IsWithinRangeOfRotation(gameObject.transform.rotation, endPointGameObject.transform.rotation, acceptableDegreesFromEndPoint))
         {
             UpdatePlacementState(PlacementStates.AcceptablePlaced);
@@ -630,11 +628,11 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         interactable.highlightOnHover = true;
         isTouchingEndPoint = false;
 
+        rigidbody.isKinematic = (beginningRigidbodyState & RigidbodySettings.IsKinematic) != 0;
+        rigidbody.useGravity = (beginningRigidbodyState & RigidbodySettings.UseGravity) != 0;
         currentPlacementState = PlacementStates.DefaultPlaced;
         if (ObjectiveType == Objective.PartObjectiveTypes.MoveToLocation)
         {
-            rigidbody.isKinematic = isKinematicBefore;
-            rigidbody.useGravity = useGravityBefore;
             InitializeEndPoint();
             endPointActiveState = true;
             if (endPointGameObject != null)
@@ -647,8 +645,6 @@ public class InteractablePart : Throwable, IObjectiveCommands {
         else if(ObjectiveType == Objective.PartObjectiveTypes.MoveFromLocation)
         {
             SetEndPointVisibility(false);
-            rigidbody.isKinematic = isKinematicBefore;
-            rigidbody.useGravity = useGravityBefore;
         }
         
     }
@@ -663,8 +659,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
      */
     public void OnObjectiveFinish()
     {
-        rigidbody.isKinematic = isKinematicAfter;
-        rigidbody.useGravity = useGravityAfter;
+        rigidbody.isKinematic = (endingRigidbodyState & RigidbodySettings.IsKinematic) != 0;
+        rigidbody.useGravity = (endingRigidbodyState & RigidbodySettings.UseGravity) != 0;
         CompletionEvent();
         objectiveState = Objective.ObjectiveStates.NotInProgress;
         interactable.highlightOnHover = false;
