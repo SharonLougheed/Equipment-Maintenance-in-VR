@@ -1,0 +1,39 @@
+//	The window gets built here.
+	string $dL_metalShaders = `window -w 350 -h 295 -mnb 1 -mxb 0 -sizeable 1 -title "Dan LeFebvre's Metal Shaders"`;
+
+// 	Creating a column layout.  For this window, there's just one column so a special name isn't necessary.
+	string $Column = `columnLayout -width 358 -adj 1 -cal "center" "Column"`;
+
+// 	This code builds the header.
+		
+	string $Titled = `columnLayout -width 356 -adj 1 -cal "center" "Title"`;
+	
+		text -height 5 -label " " ;	//Spacer
+		separator -height 5 -style "double" ;
+		text -height 25 -align "center" -font "boldLabelFont"
+			-label "Welcome to Dan LeFebvre's Metal Shaders!\n\Version: 0.3.  Release Date: August 2009";
+		separator -height 5 -style "double";
+		text -height 5 -label " " ;	//Spacer
+		
+	setParent $Column;	
+		
+// 	This builds the content text.
+	
+	frameLayout -cll 0 -vis 1 -lv 0 -label "Build" -la "center" -bs "out";
+	
+	columnLayout -enable 1 -adj 1 -cat "left" 1 -cal "center" ;
+		
+
+text -height 195 -align "left" -font "plainLabelFont"
+	-label "Hello!\n\ \n\   With this release of dL_metalShaders, I have switched from using\n\ the Maya 2009 dependent shader mia_material_x_passes in favor\n\ of the Maya 2008 compatible mia_material_x shader.\n\ \n\  This was the result of getting quite a few requests to do so.\n\ \n\ The mia_material_x shader can be upgraded to mia_material_x_passes in\n\ Maya 2009 and Maya 2010 by going to Upgrade Shader in the Attribute\n\ Editor.\n\ \n\If you feel like taking the time to email, I'd love to know how you use\n\ these shaders. You can contact me at emailme@danlefeb.com or\n\ through my website at http://danlefeb.com.";
+
+text -height 20 -align "right" -font "smallFixedWidthFont" 
+	-label "--Dan LeFebvre ";
+
+button -height 25 -width 25 -label "Close" -command ("deleteUI -window " + $dL_metalShaders);
+
+
+
+	setParent..;		
+//	This is the magic line that makes everything up to this point visible!
+	showWindow $dL_metalShaders;
