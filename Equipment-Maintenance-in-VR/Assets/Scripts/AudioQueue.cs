@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AudioQueue : MonoBehaviour {
-
+public class AudioQueue : MonoBehaviour
+{
     public AudioSource audioSource;
     public bool muteOnStart = true;
     private Queue<AudioClip> audioClipsQueue = new Queue<AudioClip>();
@@ -11,13 +11,15 @@ public class AudioQueue : MonoBehaviour {
 
     
     // Use this for initialization
-    void Start () {
+    void Start ()
+    {
         audioSource.volume = 0.5f;
         audioSource.mute = muteOnStart;
     }
 	
 	// Update is called once per frame
-	void Update () {
+	void Update ()
+    {
 		if(audioSource != null && audioClipsQueue.Count > 0 && !isPaused && !audioSource.isPlaying)
         {
             audioSource.clip = audioClipsQueue.Dequeue();
@@ -32,8 +34,15 @@ public class AudioQueue : MonoBehaviour {
 
     public void AddAudioClipToQueue(AudioClip audioClip, bool stopCurrentAudio = false)
     {
-
         audioClipsQueue.Enqueue(audioClip);
+    }
+
+    public void ChangeAudioSource(AudioSource newAudioSource)
+    {
+        if (audioSource.isPlaying)
+            audioSource.Stop();
+        audioSource = newAudioSource;
+        audioSource.Play();
     }
 
     public void PlayOneShot(AudioClip audioClip, float volume = 1.0f)
