@@ -51,6 +51,11 @@ public class AudioQueue : MonoBehaviour
             audioSource.PlayOneShot(audioClip, volume);
     }
 
+    public void StopAudio()
+    {
+        audioSource.Stop();
+    }
+
     public void PauseQueue()
     {
         isPaused = true;
