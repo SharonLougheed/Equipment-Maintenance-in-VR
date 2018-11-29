@@ -660,8 +660,8 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     public void OnObjectiveFinish()
     {
         ApplyEndingConditions();
-        CompletionEvent();
-        objectiveState = Objective.ObjectiveStates.NotInProgress;
         interactable.highlightOnHover = false;
+        objectiveState = Objective.ObjectiveStates.NotInProgress;
+        CompletionEvent();
     }
 }
