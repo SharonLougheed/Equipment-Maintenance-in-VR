@@ -56,6 +56,11 @@ public class AudioQueue : MonoBehaviour
         audioSource.Stop();
     }
 
+    public void PlayAudio()
+    {
+        audioSource.Play();
+    }
+
     public void PauseQueue()
     {
         isPaused = true;
