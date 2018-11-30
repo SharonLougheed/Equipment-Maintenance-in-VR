@@ -42,11 +42,11 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
 
     public void OnObjectiveFinish()
     {
+        objectiveState = Objective.ObjectiveStates.NotInProgress;
         Destroy(teleporterCollider);
         teleportActiveState = false;
         teleportPoint.markerActive = false;
         teleportPoint.gameObject.SetActive(false);
-        objectiveState = Objective.ObjectiveStates.NotInProgress;
         if(CompletionEvent != null)
             CompletionEvent();
     }
@@ -65,6 +65,16 @@ public class MovementObjective : MonoBehaviour, IObjectiveCommands {
             if(other.GetInstanceID() == vrCollider.GetInstanceID()) {
                 OnObjectiveFinish();
             }
+        }
+    }
+
+    void Update()
+    {
+        if (objectiveState == Objective.ObjectiveStates.InProgress && (!teleportPoint.gameObject.activeInHierarchy || !teleportPoint.markerActive))
+        {
+            teleportActiveState = true;
+            teleportPoint.gameObject.SetActive(teleportActiveState);
+            teleportPoint.markerActive = teleportActiveState;
         }
     }
 }
