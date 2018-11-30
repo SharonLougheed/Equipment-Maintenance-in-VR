@@ -23,7 +23,8 @@ public class InteractableObjective : MonoBehaviour, IObjectiveCommands {
         //{
         //    hand.DetachObject(dummyObject);
         //}
-        CompletionEvent();
+        if(CompletionEvent != null)
+            CompletionEvent();
     }
 
     public void OnObjectiveReset()
