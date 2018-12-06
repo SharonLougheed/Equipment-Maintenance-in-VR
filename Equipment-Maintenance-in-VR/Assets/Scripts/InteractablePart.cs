@@ -618,8 +618,11 @@ public class InteractablePart : Throwable, IObjectiveCommands {
     {
         rigidbody.isKinematic = (endingRigidbodyState & RigidbodySettings.IsKinematic) != 0;
         rigidbody.useGravity = (endingRigidbodyState & RigidbodySettings.UseGravity) != 0;
-        SetEndPointVisibility(false);
-        endPointGameObject = null;
+        if(endPointGameObject != null)
+        {
+            endPointGameObject.SetActive(false);
+            endPointGameObject = null;
+        }
     }
 
     /* Initializes the this object with the settings of the objective and resets any state variables
