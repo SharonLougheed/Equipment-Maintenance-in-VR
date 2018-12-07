@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/GeneratorEnvironmentWorkshop.unity
+    guid: 7b8df9f640f87ed42881d3ac3b0ece62
   m_configObjects: {}
